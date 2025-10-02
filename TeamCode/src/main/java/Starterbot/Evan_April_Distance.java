@@ -1,5 +1,6 @@
 package Starterbot;
 
+
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -11,12 +12,15 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import java.util.List;
 
-@TeleOp(name = "AutoCalculate", group = "Robot")
-public class Teleop_Apriltag_Distance extends LinearOpMode {
+
+@TeleOp(name = "Evan_April_Distance", group = "Robot")
+public class Evan_April_Distance extends LinearOpMode {
+
 
     // --- VISION DECLARATIONS ---
     private VisionPortal visionPortal;
     private AprilTagProcessor aprilTag;
+
 
     // --- MOTOR/SERVO DECLARATIONS ---
     private DcMotor ld; // Left Drive
@@ -24,6 +28,7 @@ public class Teleop_Apriltag_Distance extends LinearOpMode {
     private DcMotor ot; // Outtake Motor
     private Servo lr; // Left Roller SERVO (Positional)
     private Servo rr; // Right Roller SERVO (Positional)
+
 
     // --- CONFIGURATION CONSTANTS (Drive/Servo/Outtake) ---
     private static final double TURN_SCALING = 1.0;
@@ -33,13 +38,16 @@ public class Teleop_Apriltag_Distance extends LinearOpMode {
     private static final double OUTTAKE_POWER_FAR = 1;    // Gamepad FAR speed
     private static final double OUTTAKE_HOLD_POWER = 0.01;
 
+
     // --- APRILTAG CONSTANTS ---
     private static final int TARGET_TAG_ID = 24;
     private static final String CAMERA_NAME = "TRACKER";
 
+
     // --- NEW PROPORTIONAL CONTROL CONSTANTS (SENSITIVITY) ---
     // The motor power will be 0.0 at this distance.
     private static final double TARGET_DISTANCE = 0; // inches (e.g., you stop the outtake 10 inches away)
+
 
     // SENSITIVITY CONTROL (Proportional Gain)
     // How much power changes per inch of distance difference.
@@ -48,8 +56,10 @@ public class Teleop_Apriltag_Distance extends LinearOpMode {
     // Example: 0.05 means power changes by 5% per inch of error.
     private static final double POWER_PER_INCH_GAIN = 0.00645833; // ADJUST THIS FOR SENSITIVITY
 
+
     // Minimum power to ensure the motor actually moves (prevents sticking at zero)
     private static final double MIN_MOTOR_POWER = 0.10;
+
 
     // --- STATE VARIABLES (from Test.java) ---
     private int lbToggleState = 0;
@@ -58,8 +68,10 @@ public class Teleop_Apriltag_Distance extends LinearOpMode {
     private boolean ltPressedLast = false;
     private boolean isSetPosition = false;
 
+
     @Override
     public void runOpMode() throws InterruptedException {
+
 
         // --- 1. HARDWARE MAPPING ---
         ld = hardwareMap.get(DcMotor.class, "ld");
@@ -68,6 +80,7 @@ public class Teleop_Apriltag_Distance extends LinearOpMode {
         lr = hardwareMap.get(Servo.class, "lr");
         rr = hardwareMap.get(Servo.class, "rr");
 
+
         // --- 2. MOTOR/SERVO CONFIGURATION ---
         ld.setDirection(DcMotor.Direction.REVERSE);
         rd.setDirection(DcMotor.Direction.FORWARD);
@@ -75,22 +88,28 @@ public class Teleop_Apriltag_Distance extends LinearOpMode {
         rr.setDirection(Servo.Direction.FORWARD);
         lr.setDirection(Servo.Direction.REVERSE);
 
+
         ld.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         rd.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         ot.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
+
         lr.setPosition(SERVO_HOME_POS);
         rr.setPosition(SERVO_HOME_POS);
+
 
         // --- 3. VISION INITIALIZATION ---
         aprilTag = AprilTagProcessor.easyCreateWithDefaults();
         visionPortal = VisionPortal.easyCreateWithDefaults(
                 hardwareMap.get(WebcamName.class, CAMERA_NAME), aprilTag);
 
+
         visionPortal.resumeLiveView();
+
 
         telemetry.addData("Status", "System Initializing...");
         telemetry.update();
+
 
         // --- EXPLICITLY WAIT FOR CAMERA TO OPEN AND REPORT STATUS ---
         while (visionPortal.getCameraState() == VisionPortal.CameraState.STARTING_STREAM && opModeInInit()) {
@@ -98,6 +117,7 @@ public class Teleop_Apriltag_Distance extends LinearOpMode {
             telemetry.update();
             sleep(50);
         }
+
 
         if (visionPortal.getCameraState() == VisionPortal.CameraState.STREAMING) {
             telemetry.addData("Camera Status", "✅ STREAMING (Ready!)");
@@ -112,40 +132,47 @@ public class Teleop_Apriltag_Distance extends LinearOpMode {
             }
         }
 
+
         telemetry.update();
         waitForStart();
+
 
         // --- Main loop ---
         while (opModeIsActive()) {
             driveRobot();
 
+
             boolean tagControlled = controlOuttakeByAprilTagDistance();
 
-            if (!tagControlled) {
-                controlOuttakeByGamepad();
-            }
+
+
 
             controlSetPositionServos();
 
+
             // --- TELEMETRY ---
-            telemetry.addData("\n--- CONTROLS ---", "");
-            telemetry.addData("Outtake Power Source", tagControlled ? "AprilTag (AUTO)" : "Gamepad (MANUAL)");
+
 
             telemetry.addData("1. LB Near Power (%.2f)", OUTTAKE_POWER_NEAR);
             telemetry.addData("   Status", lbToggleState == 1 ? "ON" : "OFF");
 
+
             telemetry.addData("2. LT Far Power (%.2f)", OUTTAKE_POWER_FAR);
             telemetry.addData("   Status", ltToggleState == 1 ? "ON" : "OFF");
+
 
             telemetry.addData("3. Outtake Power", "%.2f", ot.getPower());
             telemetry.update();
         }
 
+
         visionPortal.close();
         ot.setPower(0);
     }
 
+
     // ----------------------------------------------------------------------------------
+
 
     /**
      * Finds the AprilTag (ID 24) and sets the Outtake motor (ot) power using proportional scaling.
@@ -156,23 +183,31 @@ public class Teleop_Apriltag_Distance extends LinearOpMode {
             return false;
         }
 
+
         List<AprilTagDetection> currentDetections = aprilTag.getDetections();
+
 
         for (AprilTagDetection detection : currentDetections) {
             if (detection.id == TARGET_TAG_ID) {
                 double currentDistance = detection.ftcPose.range;
                 double motorPower = 0;
 
-                // --- 1. PROPORTIONAL CONTROL (P-Control) CALCULATION ---
-                    // Error is positive (Tag is too far) -> Power should be positive (move forward)
 
-                    // Power is calculated as Error * Gain (Sensitivity)
+                // --- 1. PROPORTIONAL CONTROL (P-Control) CALCULATION ---
+                // Error is positive (Tag is too far) -> Power should be positive (move forward)
+
+
+                // Power is calculated as Error * Gain (Sensitivity)
                 motorPower = 0.535 + (currentDistance * POWER_PER_INCH_GAIN);
 
-                    // Cap the power at 1.0 (full speed)
-                motorPower = Math.min(motorPower, 1.0);
 
-                    // Ensure minimum power is met when far away
+                // Cap the power at 1.0 (full speed)
+                motorPower = Math.min(motorPower, .8);
+
+
+                // Ensure minimum power is met when far away
+
+
 
 
                 // --- 2. Apply Power and Telemetry ---
@@ -184,16 +219,19 @@ public class Teleop_Apriltag_Distance extends LinearOpMode {
                 telemetry.addData("GAIN (Sensitivity)", "%.3f power/inch", POWER_PER_INCH_GAIN);
                 telemetry.addData("AUTO Power", "%.3f", motorPower);
 
+
                 return true; // Tag found and motor set
             }
         }
-
+        ot.setPower(0.535);
         // Tag not found, motor power will be handled by gamepad control
-        telemetry.addData("Status", "Searching for Tag %d...", TARGET_TAG_ID);
-        return true;
+        telemetry.addData("Status", "Can not find April Tag", TARGET_TAG_ID);
+        return false;
     }
 
+
     // ----------------------------------------------------------------------------------
+
 
     /**
      * Controls the Outtake motor (ot) using the gamepad toggles.
@@ -203,6 +241,7 @@ public class Teleop_Apriltag_Distance extends LinearOpMode {
         boolean lbCurrent = gamepad1.left_bumper;
         boolean ltCurrent = gamepad1.left_trigger > 0.1;
 
+
         // --- TOGGLE LOGIC ---
         if (lbCurrent && !lbPressedLast) {
             lbToggleState = 1 - lbToggleState;
@@ -210,11 +249,13 @@ public class Teleop_Apriltag_Distance extends LinearOpMode {
         }
         lbPressedLast = lbCurrent;
 
+
         if (ltCurrent && !ltPressedLast) {
             ltToggleState = 1 - ltToggleState;
             lbToggleState = 0;
         }
         ltPressedLast = ltCurrent;
+
 
         // --- APPLY POWER ---
         if (lbToggleState == 1) {
@@ -226,13 +267,16 @@ public class Teleop_Apriltag_Distance extends LinearOpMode {
         }
     }
 
+
     // ----------------------------------------------------------------------------------
+
 
     /**
      * Controls the Servo positions based on the Right Bumper (RB) (Momentary action).
      */
     public void controlSetPositionServos() {
         boolean rbCurrent = gamepad1.right_bumper;
+
 
         if (rbCurrent) {
             isSetPosition = true;
@@ -245,7 +289,9 @@ public class Teleop_Apriltag_Distance extends LinearOpMode {
         }
     }
 
+
     // ----------------------------------------------------------------------------------
+
 
     /**
      * Controls the 2-motor POV (Tank) Drive system.
@@ -254,8 +300,10 @@ public class Teleop_Apriltag_Distance extends LinearOpMode {
         double drive = -gamepad1.left_stick_y;
         double turn  = gamepad1.right_stick_x * TURN_SCALING;
 
+
         double left = drive + turn;
         double right = drive - turn;
+
 
         double max = Math.max(Math.abs(left), Math.abs(right));
         if (max > 1.0) {
@@ -263,9 +311,16 @@ public class Teleop_Apriltag_Distance extends LinearOpMode {
             right /= max;
         }
 
+
         ld.setPower(left);
         rd.setPower(right);
     }
 }
+
+
+
+
+
+
 
 
