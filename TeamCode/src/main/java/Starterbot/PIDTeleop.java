@@ -25,10 +25,10 @@ public class PIDTeleop extends LinearOpMode {
 
     // --- CONFIGURATION CONSTANTS (Drive/Servo/Outtake) ---
     private static final double P = 100;
-    private static final double I = 50;
+    private static final double I = 7;
     private static final double D = 5;
     private static final double F = 0.0;
-    private static final double TARGET_VELOCITY = 1600;
+    private static final double TARGET_VELOCITY = 1700;
     private static final double TURN_SCALING = 1.0;
     private static final double SERVO_HOME_POS = 0.1;
     private static final double SERVO_SET_POS  = 0.4;
