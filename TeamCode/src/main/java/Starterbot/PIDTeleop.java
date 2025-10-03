@@ -24,9 +24,9 @@ public class PIDTeleop extends LinearOpMode {
     private Servo rr; // Right Roller SERVO (Positional)
 
     // --- CONFIGURATION CONSTANTS (Drive/Servo/Outtake) ---
-    private static final double P = 10.0;
-    private static final double I = 0.1;
-    private static final double D = 0.5;
+    private static final double P = 0;
+    private static final double I = 100;
+    private static final double D = 0;
     private static final double F = 0.0;
     private static final double TURN_SCALING = 1.0;
     private static final double SERVO_HOME_POS = 0.1;
