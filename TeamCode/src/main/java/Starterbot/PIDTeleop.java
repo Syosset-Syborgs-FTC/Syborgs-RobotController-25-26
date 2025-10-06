@@ -28,7 +28,7 @@ public class PIDTeleop extends LinearOpMode {
     private static final double I = 7;
     private static final double D = 5;
     private static final double F = 0.0;
-    private static final double TARGET_VELOCITY = 1675;
+    private static final double TARGET_VELOCITY = 1400;
     private static final double TURN_SCALING = 1.0;
     private static final double SERVO_HOME_POS = 0.1;
     private static final double SERVO_SET_POS  = 0.4;
@@ -168,7 +168,7 @@ public class PIDTeleop extends LinearOpMode {
     public void controlSetPositionServos() {
         boolean rbCurrent = gamepad1.right_bumper;
 
-        if (rbCurrent) {
+        if (rbCurrent && ot.getVelocity() > TARGET_VELOCITY-50) {
             isSetPosition = true;
             lr.setPosition(SERVO_SET_POS);
             rr.setPosition(SERVO_SET_POS);
