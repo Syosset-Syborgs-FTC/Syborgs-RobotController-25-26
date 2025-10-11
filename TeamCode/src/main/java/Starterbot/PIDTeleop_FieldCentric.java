@@ -21,6 +21,7 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
     private DcMotorEx ot; // Outtake
     private Servo lr, rr; // Rollers
     private IMU imu;
+    //Thresholds
 
     // --- PID CONSTANTS ---
     private static final double P = 100;
@@ -28,6 +29,7 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
     private static final double D = 5;
     private static final double F = 0.0;
     private static final double TARGET_VELOCITY = 1350;
+    private static final double CYCLE_VELOCITY = 800;
 
     // --- SERVO CONSTANTS ---
     private static final double SERVO_HOME_POS = 0.1;
@@ -42,8 +44,11 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
     private int lbToggleState = 0;
     private boolean lbPressedLast = false;
     private int ltToggleState = 0;
-    private boolean ltPressedLast = false;
+    private boolean xPressedLast = false;
     private boolean isSetPosition = false;
+    private boolean turning180 = false;
+    private double targetHeading = 0;
+
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -111,9 +116,41 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
         double y = -gamepad1.left_stick_y; // forward/back
         double x = gamepad1.left_stick_x;  // strafe
         double rx = gamepad1.right_stick_x; // rotation
-
-        // Get heading in radians
         double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
+        if (gamepad1.left_trigger > 0.4 && gamepad1.right_trigger < 0.4) {
+            rx = -0.1;
+        } else if (gamepad1.right_trigger > 0.4 && gamepad1.left_trigger < 0.4) {
+            rx = 0.1;
+        }
+        if (gamepad1.dpad_down) {
+            y = -0.1;
+        } else if (gamepad1.dpad_up) {
+            y = 0.1;
+        }
+        if (gamepad1.dpad_right) {
+            x = 0.1;
+        } else if (gamepad1.dpad_left) {
+            x = -0.1;
+        }
+        if (gamepad1.b && !turning180) {
+            turning180 = true;
+            targetHeading = botHeading + Math.PI;
+            if (targetHeading > Math.PI) targetHeading -= 2 * Math.PI;
+            else if (targetHeading < -Math.PI) targetHeading += 2 * Math.PI;
+        }
+
+        if (turning180) {
+            double error = targetHeading - botHeading;
+            if (error > Math.PI) error -= 2 * Math.PI;
+            if (error < -Math.PI) error += 2 * Math.PI;
+            double Kp = 0.8;
+            rx = error * Kp;
+            rx = Math.max(-0.7, Math.min(0.7, rx));
+            if (Math.abs(error) < Math.toRadians(3)) {
+                turning180 = false;
+                rx = 0;
+            }
+        }
 
         // Field-centric transformation
         double rotX = x * Math.cos(-botHeading) - y * Math.sin(-botHeading);
@@ -140,7 +177,7 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
 
     public void controlOuttakeByGamepad() {
         boolean lbCurrent = gamepad1.left_bumper;
-        boolean ltCurrent = gamepad1.left_trigger > 0.1;
+        boolean xCurrent = gamepad1.x;
 
         if (lbCurrent && !lbPressedLast) {
             lbToggleState = 1 - lbToggleState;
@@ -148,24 +185,22 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
         }
         lbPressedLast = lbCurrent;
 
-        if (ltCurrent && !ltPressedLast) {
+        if (xCurrent && !xPressedLast) {
             ltToggleState = 1 - ltToggleState;
             lbToggleState = 0;
         }
-        ltPressedLast = ltCurrent;
+        xPressedLast = xCurrent;
 
         if (lbToggleState == 1) {
             ot.setVelocity(TARGET_VELOCITY);
-            if (Math.abs(ot.getVelocity() - TARGET_VELOCITY) < 14) {
-                ot.setPower(0);
-            }
+        } else if (xPressedLast){
+            ot.setVelocity(CYCLE_VELOCITY);
         } else {
             ot.setPower(OUTTAKE_HOLD_POWER);
         }
     }
 
     // ----------------------------------------------------------------------------------
-
     public void controlSetPositionServos() {
         boolean rbCurrent = gamepad1.right_bumper;
 
