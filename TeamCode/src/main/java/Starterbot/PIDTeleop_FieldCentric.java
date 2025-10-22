@@ -48,7 +48,7 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
     private boolean isSetPosition = false;
     private boolean turning180 = false;
     private double targetHeading = 0;
-
+    private double queuedLaunches = 0;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -193,8 +193,6 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
 
         if (lbToggleState == 1) {
             ot.setVelocity(TARGET_VELOCITY);
-        } else if (xPressedLast){
-            ot.setVelocity(CYCLE_VELOCITY);
         } else {
             ot.setPower(OUTTAKE_HOLD_POWER);
         }
@@ -202,12 +200,18 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
 
     // ----------------------------------------------------------------------------------
     public void controlSetPositionServos() {
-        boolean rbCurrent = gamepad1.right_bumper;
-
-        if (rbCurrent && ot.getVelocity() > TARGET_VELOCITY - 40 && ot.getVelocity() < TARGET_VELOCITY + 20) {
-            isSetPosition = true;
-            lr.setPosition(SERVO_SET_POS);
-            rr.setPosition(SERVO_SET_POS);
+        boolean rbCurrent = gamepad1.rightBumperWasReleased();
+        if (rbCurrent) {
+            queuedLaunches += 1;
+        }
+        boolean canLaunch = ot.getVelocity() > TARGET_VELOCITY - 40 && ot.getVelocity() < TARGET_VELOCITY + 20;
+        if (canLaunch) {
+            if (queuedLaunches > 0) {
+                isSetPosition = true;
+                lr.setPosition(SERVO_SET_POS);
+                rr.setPosition(SERVO_SET_POS);
+                queuedLaunches--;
+            }
         } else {
             isSetPosition = false;
             lr.setPosition(SERVO_HOME_POS);
