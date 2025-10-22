@@ -49,7 +49,7 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
 	private boolean isSetPosition = false;
 	private boolean turning180 = false;
 	private double targetHeading = 0;
-	private boolean rToggleState = false;
+	private boolean autofiring = false;
 	private double queuedLaunches = 0;
 
 	@Override
@@ -197,14 +197,13 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
 
 	// ----------------------------------------------------------------------------------
 	public void controlSetPositionServos() {
-		boolean rCurrent = gamepad1.rightBumperWasPressed();
 
-		if (rCurrent) {
-			rToggleState = !rToggleState;
+		if (gamepad1.xWasPressed()) {
+			autofiring = !autofiring;
 		}
-
+		boolean manualFire = gamepad1.rightBumperWasPressed();
 		boolean canLaunch = ot.getVelocity() > TARGET_VELOCITY - 40 && ot.getVelocity() < TARGET_VELOCITY + 20;
-		if (canLaunch && rToggleState) {
+		if (canLaunch && (autofiring || manualFire)) {
 			lr.setPosition(SERVO_SET_POS);
 			rr.setPosition(SERVO_SET_POS);
 		} else {
