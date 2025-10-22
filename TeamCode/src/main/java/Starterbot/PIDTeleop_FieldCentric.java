@@ -1,7 +1,7 @@
 package Starterbot;
 
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -36,8 +36,6 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
     private static final double SERVO_SET_POS  = 0.4;
 
     // --- OUTTAKE CONSTANTS ---
-    private static final double trigger_speed = 0.2;
-    private static final double dpad_speed = 0.2;
     private static final double OUTTAKE_POWER_NEAR = 0.575;
     private static final double OUTTAKE_POWER_FAR = 1;
     private static final double OUTTAKE_HOLD_POWER = 0.01;
@@ -45,12 +43,12 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
     // --- STATE VARIABLES ---
     private int lbToggleState = 0;
     private boolean lbPressedLast = false;
-    private int xToggleState = 0;
+    private int ltToggleState = 0;
     private boolean xPressedLast = false;
     private boolean isSetPosition = false;
     private boolean turning180 = false;
     private double targetHeading = 0;
-
+    private double queuedLaunches = 0;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -76,7 +74,7 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
         br.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         ot.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        lr.setPosition(SERVO_SET_POS);
+        lr.setPosition(SERVO_HOME_POS);
         rr.setPosition(SERVO_HOME_POS);
 
         // --- IMU CONFIG (Hub logo faces LEFT, USB forward) ---
@@ -120,19 +118,19 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
         double rx = gamepad1.right_stick_x; // rotation
         double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
         if (gamepad1.left_trigger > 0.4 && gamepad1.right_trigger < 0.4) {
-            rx = -1 * trigger_speed;
+            rx = -0.1;
         } else if (gamepad1.right_trigger > 0.4 && gamepad1.left_trigger < 0.4) {
-            rx = trigger_speed;
+            rx = 0.1;
         }
         if (gamepad1.dpad_down) {
-            y = -1 * dpad_speed;
+            y = -0.1;
         } else if (gamepad1.dpad_up) {
-            y = dpad_speed;
+            y = 0.1;
         }
         if (gamepad1.dpad_right) {
-            x = dpad_speed;
+            x = 0.1;
         } else if (gamepad1.dpad_left) {
-            x = -1 * dpad_speed;
+            x = -0.1;
         }
         if (gamepad1.b && !turning180) {
             turning180 = true;
@@ -183,19 +181,18 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
 
         if (lbCurrent && !lbPressedLast) {
             lbToggleState = 1 - lbToggleState;
-            xToggleState = 0;
+            ltToggleState = 0;
         }
         lbPressedLast = lbCurrent;
 
         if (xCurrent && !xPressedLast) {
-            xToggleState = 1 - xToggleState;
+            ltToggleState = 1 - ltToggleState;
             lbToggleState = 0;
         }
+        xPressedLast = xCurrent;
 
         if (lbToggleState == 1) {
             ot.setVelocity(TARGET_VELOCITY);
-        } else if (xToggleState == 1){
-            ot.setVelocity(CYCLE_VELOCITY);
         } else {
             ot.setPower(OUTTAKE_HOLD_POWER);
         }
@@ -203,15 +200,21 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
 
     // ----------------------------------------------------------------------------------
     public void controlSetPositionServos() {
-        boolean rbCurrent = gamepad1.right_bumper;
-
-        if (rbCurrent && ot.getVelocity() > TARGET_VELOCITY - 40 && ot.getVelocity() < TARGET_VELOCITY + 20) {
-            isSetPosition = true;
-            lr.setPosition(SERVO_HOME_POS);
-            rr.setPosition(SERVO_SET_POS);
+        boolean rbCurrent = gamepad1.rightBumperWasReleased();
+        if (rbCurrent) {
+            queuedLaunches += 1;
+        }
+        boolean canLaunch = ot.getVelocity() > TARGET_VELOCITY - 40 && ot.getVelocity() < TARGET_VELOCITY + 20;
+        if (canLaunch) {
+            if (queuedLaunches > 0) {
+                isSetPosition = true;
+                lr.setPosition(SERVO_SET_POS);
+                rr.setPosition(SERVO_SET_POS);
+                queuedLaunches--;
+            }
         } else {
             isSetPosition = false;
-            lr.setPosition(SERVO_SET_POS);
+            lr.setPosition(SERVO_HOME_POS);
             rr.setPosition(SERVO_HOME_POS);
         }
     }
