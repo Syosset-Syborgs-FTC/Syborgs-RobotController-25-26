@@ -1,7 +1,7 @@
 package Starterbot;
 
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -36,6 +36,8 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
     private static final double SERVO_SET_POS  = 0.4;
 
     // --- OUTTAKE CONSTANTS ---
+    private static final double trigger_speed = 0.2;
+    private static final double dpad_speed = 0.2;
     private static final double OUTTAKE_POWER_NEAR = 0.575;
     private static final double OUTTAKE_POWER_FAR = 1;
     private static final double OUTTAKE_HOLD_POWER = 0.01;
@@ -43,7 +45,7 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
     // --- STATE VARIABLES ---
     private int lbToggleState = 0;
     private boolean lbPressedLast = false;
-    private int ltToggleState = 0;
+    private int xToggleState = 0;
     private boolean xPressedLast = false;
     private boolean isSetPosition = false;
     private boolean turning180 = false;
@@ -74,7 +76,7 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
         br.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         ot.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        lr.setPosition(SERVO_HOME_POS);
+        lr.setPosition(SERVO_SET_POS);
         rr.setPosition(SERVO_HOME_POS);
 
         // --- IMU CONFIG (Hub logo faces LEFT, USB forward) ---
@@ -118,19 +120,19 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
         double rx = gamepad1.right_stick_x; // rotation
         double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
         if (gamepad1.left_trigger > 0.4 && gamepad1.right_trigger < 0.4) {
-            rx = -0.1;
+            rx = -1 * trigger_speed;
         } else if (gamepad1.right_trigger > 0.4 && gamepad1.left_trigger < 0.4) {
-            rx = 0.1;
+            rx = trigger_speed;
         }
         if (gamepad1.dpad_down) {
-            y = -0.1;
+            y = -1 * dpad_speed;
         } else if (gamepad1.dpad_up) {
-            y = 0.1;
+            y = dpad_speed;
         }
         if (gamepad1.dpad_right) {
-            x = 0.1;
+            x = dpad_speed;
         } else if (gamepad1.dpad_left) {
-            x = -0.1;
+            x = -1 * dpad_speed;
         }
         if (gamepad1.b && !turning180) {
             turning180 = true;
@@ -181,19 +183,18 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
 
         if (lbCurrent && !lbPressedLast) {
             lbToggleState = 1 - lbToggleState;
-            ltToggleState = 0;
+            xToggleState = 0;
         }
         lbPressedLast = lbCurrent;
 
         if (xCurrent && !xPressedLast) {
-            ltToggleState = 1 - ltToggleState;
+            xToggleState = 1 - xToggleState;
             lbToggleState = 0;
         }
-        xPressedLast = xCurrent;
 
         if (lbToggleState == 1) {
             ot.setVelocity(TARGET_VELOCITY);
-        } else if (xPressedLast){
+        } else if (xToggleState == 1){
             ot.setVelocity(CYCLE_VELOCITY);
         } else {
             ot.setPower(OUTTAKE_HOLD_POWER);
@@ -206,11 +207,11 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
 
         if (rbCurrent && ot.getVelocity() > TARGET_VELOCITY - 40 && ot.getVelocity() < TARGET_VELOCITY + 20) {
             isSetPosition = true;
-            lr.setPosition(SERVO_SET_POS);
+            lr.setPosition(SERVO_HOME_POS);
             rr.setPosition(SERVO_SET_POS);
         } else {
             isSetPosition = false;
-            lr.setPosition(SERVO_HOME_POS);
+            lr.setPosition(SERVO_SET_POS);
             rr.setPosition(SERVO_HOME_POS);
         }
     }
