@@ -7,16 +7,26 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.hardware.IMU;
+
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
+import org.firstinspires.ftc.vision.VisionPortal;
+import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
+import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 
-@Autonomous(name = "Auton", group = "Robot")
-public class Auton1 extends LinearOpMode {
+import java.util.List;
+
+@Autonomous(name = "AutonApril", group = "Robot")
+public class AutonApril extends LinearOpMode {
     private DcMotor fl, fr, bl, br;
     private Servo lr; // Left Roller SERVO (Positional)
     private Servo rr; // Right Roller SERVO (Positional)
     private IMU imu;
+    private String CAMERA_NAME = "TRACKER";
+    private AprilTagProcessor aprilTag;
+    private int  TARGET_TAG_ID = 24;
     private static final double P = 100;
     private static final double I = 7;
     private static final double D = 5;
@@ -25,6 +35,7 @@ public class Auton1 extends LinearOpMode {
     private static final double SERVO_HOME_POS = 0.1;
     private static final double SERVO_SET_POS  = 0.4;
     private DcMotorEx ot; // Outtake
+    private VisionPortal visionPortal;
     @Override
     public void runOpMode() throws InterruptedException {
 
@@ -52,12 +63,37 @@ public class Auton1 extends LinearOpMode {
                 )
         ));
         imu.resetYaw();
+        aprilTag = AprilTagProcessor.easyCreateWithDefaults();
+        visionPortal = VisionPortal.easyCreateWithDefaults(
+                hardwareMap.get(WebcamName.class, CAMERA_NAME), aprilTag);
+
+
+        visionPortal.resumeLiveView();
         PIDFCoefficients pidfNew = new PIDFCoefficients(P, I, D, F);
         ot.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidfNew);
         telemetry.addLine("Ready for start");
         telemetry.update();
         lr.setPosition(SERVO_HOME_POS);
-        rr.setPosition(SERVO_HOME_POS);
+        rr.setPosition(SERVO_SET_POS);
+        while (visionPortal.getCameraState() == VisionPortal.CameraState.STARTING_STREAM) {
+            telemetry.addData("Camera Status", "Waiting for stream to start...");
+            telemetry.update();
+            sleep(50);
+        }
+
+
+        if (visionPortal.getCameraState() == VisionPortal.CameraState.STREAMING) {
+            telemetry.addData("Camera Status", "✅ STREAMING (Ready!)");
+            telemetry.addData("Tag Power Source", "AprilTag Distance (Proportional)");
+        } else {
+            telemetry.addData("Camera Status", "❌ FAILED TO OPEN! Using Gamepad.");
+            telemetry.addData("Tag Power Source", "Gamepad Toggles");
+            while (opModeInInit()) {
+                telemetry.addData("STOP", "Camera Failed. Fix before starting.");
+                telemetry.update();
+                sleep(200);
+            }
+        }
         waitForStart();
         ot.setVelocity(TARGET_VELOCITY);
         moveFieldCentricSpeed(0.0, 0.8, 0);
@@ -67,11 +103,24 @@ public class Auton1 extends LinearOpMode {
         moveFieldCentricSpeed(0.6, 0, 0.0);
         sleep(900);
         stopMotors();
-        sleep(200);
-        moveFieldCentricSpeed(0.0, 0, 0.5);
-        sleep(250);
+        moveFieldCentricSpeed(0, 0, 0.2);
+        List<AprilTagDetection> currentDetections = aprilTag.getDetections();
+        for (AprilTagDetection detection : currentDetections) {
+            if (detection.id == TARGET_TAG_ID) {
+                double angle = detection.ftcPose.yaw;
+                telemetry.addLine("Found Tag");
+                while (angle > 1) {
+                    List<AprilTagDetection> cd = aprilTag.getDetections();
+                    for (AprilTagDetection d : cd) {
+                        if (d.id == TARGET_TAG_ID) {
+                            angle = d.ftcPose.yaw;
+                        }
+                    }
+                    sleep(1);
+                }
+            }
+        }
         stopMotors();
-        ot.setVelocity(TARGET_VELOCITY);
         for (int i = 0; i < 4; ++i) {
             while (ot.getVelocity() < TARGET_VELOCITY - 20) {
                 sleep(1);
@@ -83,6 +132,7 @@ public class Auton1 extends LinearOpMode {
             rr.setPosition(SERVO_HOME_POS);
             sleep(200);
         }
+
     }
 
     // ------------------------------------------------------------
