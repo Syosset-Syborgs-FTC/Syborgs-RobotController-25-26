@@ -29,13 +29,16 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
 	private static final double I = 7;
 	private static final double D = 5;
 	private static final double F = 0.0;
-	private static final double TARGET_VELOCITY = 1350;
+	private static final double TARGET_VELOCITY = 1050;
 	private static final double CYCLE_VELOCITY = 800;
 
 	// --- SERVO CONSTANTS ---
-	private static final double SERVO_HOME_POS = 0.1;
-	private static final double SERVO_SET_POS = 0.4;
+	private static final double LEFT_SERVO_HOME_POS = 0.1;
+	private static final double LEFT_SERVO_SET_POS = 0.6;
 
+	private static final double RIGHT_SERVO_HOME_POS = LEFT_SERVO_SET_POS;
+	private static final double RIGHT_SERVO_SET_POS = LEFT_SERVO_HOME_POS;
+	private double lastServoMove = 0;
 	// --- OUTTAKE CONSTANTS ---
 	private static final double OUTTAKE_POWER_NEAR = 0.575;
 	private static final double OUTTAKE_POWER_FAR = 1;
@@ -46,7 +49,7 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
 	private boolean lbPressedLast = false;
 	private int ltToggleState = 0;
 	private boolean rPressedLast = false;
-	private boolean isSetPosition = false;
+	private boolean commandSetPosition = false;
 	private boolean turning180 = false;
 	private double targetHeading = 0;
 	private boolean autofiring = false;
@@ -76,9 +79,9 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
 		br.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 		ot.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-		lr.setPosition(SERVO_HOME_POS);
-		rr.setPosition(SERVO_HOME_POS);
-
+		lr.setPosition(LEFT_SERVO_HOME_POS);
+		rr.setPosition(RIGHT_SERVO_HOME_POS);
+		telemetry.addLine(lr.getClass().getCanonicalName());
 		// --- IMU CONFIG (Hub logo faces LEFT, USB forward) ---
 		imu.initialize(new IMU.Parameters(
 				new RevHubOrientationOnRobot(
@@ -203,13 +206,21 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
 		}
 		boolean manualFire = gamepad1.rightBumperWasPressed();
 		boolean canLaunch = ot.getVelocity() > TARGET_VELOCITY - 40 && ot.getVelocity() < TARGET_VELOCITY + 20;
-		if (canLaunch && (autofiring || manualFire)) {
-			lr.setPosition(SERVO_SET_POS);
-			rr.setPosition(SERVO_SET_POS);
+		telemetry.addData("canlaunch", canLaunch);
+		telemetry.addData("autofiring", autofiring);
+		telemetry.addData("manualfire", manualFire);
+		if (Math.abs(getRuntime() - lastServoMove) < 0.3) {
+			// maintain position
+			if (commandSetPosition) {
+				lr.setPosition(LEFT_SERVO_HOME_POS);
+				rr.setPosition(RIGHT_SERVO_HOME_POS);
+			} else {
+				lr.setPosition(LEFT_SERVO_SET_POS);
+				rr.setPosition(RIGHT_SERVO_SET_POS);
+			}
 		} else {
-			isSetPosition = false;
-			lr.setPosition(SERVO_HOME_POS);
-			rr.setPosition(SERVO_HOME_POS);
+			commandSetPosition = canLaunch && (autofiring || manualFire);
+			lastServoMove = getRuntime();
 		}
 	}
 }

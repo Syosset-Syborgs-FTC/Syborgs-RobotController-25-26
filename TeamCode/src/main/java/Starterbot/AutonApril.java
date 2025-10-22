@@ -1,5 +1,7 @@
 package Starterbot;
 
+import androidx.annotation.NonNull;
+
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -105,16 +107,16 @@ public class AutonApril extends LinearOpMode {
         sleep(900);
         stopMotors();
         moveFieldCentricSpeed(0, 0, 0.2);
-        Optional<AprilTagDetection> detection = aprilTag.getDetections().stream().filter(x -> x.id == TARGET_TAG_ID).findFirst();
+        Optional<AprilTagDetection> detection = getAprilTagsWithTargetID();
         while (!detection.isPresent()) {
             // keep turning until we see the tag
-            detection = aprilTag.getDetections().stream().filter(x -> x.id == TARGET_TAG_ID).findFirst();
+            detection = getAprilTagsWithTargetID();
             sleep(1);
         }
         double angle = detection.get().ftcPose.yaw;
         telemetry.addLine("Found Tag");
         while (angle > 1) {
-            Optional<AprilTagDetection> newDetection = aprilTag.getDetections().stream().filter(x -> x.id == TARGET_TAG_ID).findFirst();
+            Optional<AprilTagDetection> newDetection = getAprilTagsWithTargetID();
             if (newDetection.isPresent()) {
                 angle = newDetection.get().ftcPose.yaw;
             } else {
@@ -135,6 +137,11 @@ public class AutonApril extends LinearOpMode {
             sleep(200);
         }
 
+    }
+
+    @NonNull
+    private Optional<AprilTagDetection> getAprilTagsWithTargetID() {
+        return aprilTag.getDetections().stream().filter(x -> x.id == TARGET_TAG_ID).findFirst();
     }
 
     // ------------------------------------------------------------
