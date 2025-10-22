@@ -17,6 +17,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 
 import java.util.List;
+import java.util.Optional;
 
 @Autonomous(name = "AutonApril", group = "Robot")
 public class AutonApril extends LinearOpMode {
@@ -104,21 +105,22 @@ public class AutonApril extends LinearOpMode {
         sleep(900);
         stopMotors();
         moveFieldCentricSpeed(0, 0, 0.2);
-        List<AprilTagDetection> currentDetections = aprilTag.getDetections();
-        for (AprilTagDetection detection : currentDetections) {
-            if (detection.id == TARGET_TAG_ID) {
-                double angle = detection.ftcPose.yaw;
-                telemetry.addLine("Found Tag");
-                while (angle > 1) {
-                    List<AprilTagDetection> cd = aprilTag.getDetections();
-                    for (AprilTagDetection d : cd) {
-                        if (d.id == TARGET_TAG_ID) {
-                            angle = d.ftcPose.yaw;
-                        }
-                    }
-                    sleep(1);
-                }
+        Optional<AprilTagDetection> detection = aprilTag.getDetections().stream().filter(x -> x.id == TARGET_TAG_ID).findFirst();
+        while (!detection.isPresent()) {
+            // keep turning until we see the tag
+            detection = aprilTag.getDetections().stream().filter(x -> x.id == TARGET_TAG_ID).findFirst();
+            sleep(1);
+        }
+        double angle = detection.get().ftcPose.yaw;
+        telemetry.addLine("Found Tag");
+        while (angle > 1) {
+            Optional<AprilTagDetection> newDetection = aprilTag.getDetections().stream().filter(x -> x.id == TARGET_TAG_ID).findFirst();
+            if (newDetection.isPresent()) {
+                angle = newDetection.get().ftcPose.yaw;
+            } else {
+                break;
             }
+            sleep(1);
         }
         stopMotors();
         for (int i = 0; i < 4; ++i) {
