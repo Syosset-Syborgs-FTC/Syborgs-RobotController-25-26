@@ -111,6 +111,7 @@ public class AutonApril extends LinearOpMode {
         while (!detection.isPresent()) {
             // keep turning until we see the tag
             detection = getAprilTagsWithTargetID();
+            telemetry.addLine("Trying to find tag");
             sleep(1);
         }
         double angle = detection.get().ftcPose.yaw;
