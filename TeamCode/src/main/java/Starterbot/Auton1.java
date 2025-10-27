@@ -21,7 +21,7 @@ public class Auton1 extends LinearOpMode {
     private static final double I = 7;
     private static final double D = 5;
     private static final double F = 0.0;
-    private static final double TARGET_VELOCITY = 1100;
+    private static final double TARGET_VELOCITY = 1200;
     private static final double LEFT_SERVO_HOME_POS = 0.1;
     private static final double LEFT_SERVO_SET_POS = 0.6;
 
@@ -70,9 +70,9 @@ public class Auton1 extends LinearOpMode {
         waitForStart();
         ot.setVelocity(TARGET_VELOCITY);
         moveFieldCentricSpeed(0.0, 0.8, 0);
-        sleep(2250);
+        sleep(2350);
         moveFieldCentricSpeed(0.6, 0, 0.0);
-        sleep(1100);
+        sleep(1200);
         moveFieldCentricSpeed(0.0, 0, 0.5);
         sleep(350);
         stopMotors();
@@ -91,8 +91,8 @@ public class Auton1 extends LinearOpMode {
         }
         moveFieldCentricSpeed(0.0, 0, -0.5);
         sleep(350);
-        moveFieldCentricSpeed(0.0, -0.8, 0);
-        sleep(1800);
+        moveFieldCentricSpeed(-1, -0.6, 0);
+        sleep(3400);
         moveFieldCentricSpeed(0.4, -0.4, 0);
         sleep(50);
         stopMotors();
