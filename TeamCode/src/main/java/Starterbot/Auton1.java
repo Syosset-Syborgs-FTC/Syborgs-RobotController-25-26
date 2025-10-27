@@ -21,9 +21,12 @@ public class Auton1 extends LinearOpMode {
     private static final double I = 7;
     private static final double D = 5;
     private static final double F = 0.0;
-    private static final double TARGET_VELOCITY = 1350;
-    private static final double SERVO_HOME_POS = 0.1;
-    private static final double SERVO_SET_POS  = 0.4;
+    private static final double TARGET_VELOCITY = 1100;
+    private static final double LEFT_SERVO_HOME_POS = 0.1;
+    private static final double LEFT_SERVO_SET_POS = 0.6;
+
+    private static final double RIGHT_SERVO_HOME_POS = LEFT_SERVO_SET_POS;
+    private static final double RIGHT_SERVO_SET_POS = LEFT_SERVO_HOME_POS;
     private DcMotorEx ot; // Outtake
     @Override
     public void runOpMode() throws InterruptedException {
@@ -45,6 +48,11 @@ public class Auton1 extends LinearOpMode {
         bl.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         br.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         ot.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        fl.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        fr.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        bl.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        br.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         imu.initialize(new IMU.Parameters(
                 new RevHubOrientationOnRobot(
                         RevHubOrientationOnRobot.LogoFacingDirection.LEFT,
@@ -56,33 +64,38 @@ public class Auton1 extends LinearOpMode {
         ot.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidfNew);
         telemetry.addLine("Ready for start");
         telemetry.update();
-        lr.setPosition(SERVO_HOME_POS);
-        rr.setPosition(SERVO_HOME_POS);
+        lr.setPosition(LEFT_SERVO_HOME_POS);
+        rr.setPosition(RIGHT_SERVO_HOME_POS);
+
         waitForStart();
         ot.setVelocity(TARGET_VELOCITY);
         moveFieldCentricSpeed(0.0, 0.8, 0);
-        sleep(1850);
-        stopMotors();
-        sleep(200);
+        sleep(2250);
         moveFieldCentricSpeed(0.6, 0, 0.0);
-        sleep(900);
-        stopMotors();
-        sleep(200);
+        sleep(1100);
         moveFieldCentricSpeed(0.0, 0, 0.5);
-        sleep(250);
+        sleep(350);
         stopMotors();
         ot.setVelocity(TARGET_VELOCITY);
-        for (int i = 0; i < 4; ++i) {
-            while (ot.getVelocity() < TARGET_VELOCITY - 20) {
+        for (int i = 0; i < 4 && opModeIsActive(); ++i) {
+            while (ot.getVelocity() < TARGET_VELOCITY - 10 && ot.getVelocity() > TARGET_VELOCITY + 10 && opModeIsActive()) {
                 sleep(1);
+                telemetry.addData("Velocity: ", ot.getVelocity());
             }
-            lr.setPosition(SERVO_SET_POS);
-            rr.setPosition(SERVO_SET_POS);
+            lr.setPosition(LEFT_SERVO_SET_POS);
+            rr.setPosition(RIGHT_SERVO_SET_POS);
             sleep(500);
-            lr.setPosition(SERVO_HOME_POS);
-            rr.setPosition(SERVO_HOME_POS);
-            sleep(200);
+            lr.setPosition(LEFT_SERVO_HOME_POS);
+            rr.setPosition(RIGHT_SERVO_HOME_POS);
+            sleep(700);
         }
+        moveFieldCentricSpeed(0.0, 0, -0.5);
+        sleep(350);
+        moveFieldCentricSpeed(0.0, -0.8, 0);
+        sleep(1800);
+        moveFieldCentricSpeed(0.4, -0.4, 0);
+        sleep(50);
+        stopMotors();
     }
 
     // ------------------------------------------------------------

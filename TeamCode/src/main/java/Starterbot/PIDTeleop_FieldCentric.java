@@ -24,12 +24,18 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
 	private IMU imu;
 	//Thresholds
 
+	// --- OUTTAKE CONSTANTS ---
+	private static final double OUTTAKE_POWER_NEAR = 0.575;
+	private static final double OUTTAKE_POWER_FAR = 1;
+	private static final double OUTTAKE_HOLD_POWER = 0.01;
+
 	// --- PID CONSTANTS ---
-	private static final double P = 100;
+	private static final double P = 50;
 	private static final double I = 7;
 	private static final double D = 5;
 	private static final double F = 0.0;
-	private static final double TARGET_VELOCITY = 1050;
+	private static final double NORMAL_VELOCITY = 1150;
+	private double TARGET_VELOCITY = OUTTAKE_HOLD_POWER;
 	private static final double CYCLE_VELOCITY = 800;
 
 	// --- SERVO CONSTANTS ---
@@ -39,11 +45,6 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
 	private static final double RIGHT_SERVO_HOME_POS = LEFT_SERVO_SET_POS;
 	private static final double RIGHT_SERVO_SET_POS = LEFT_SERVO_HOME_POS;
 	private double lastServoMove = 0;
-	// --- OUTTAKE CONSTANTS ---
-	private static final double OUTTAKE_POWER_NEAR = 0.575;
-	private static final double OUTTAKE_POWER_FAR = 1;
-	private static final double OUTTAKE_HOLD_POWER = 0.01;
-
 	// --- STATE VARIABLES ---
 	private int lbToggleState = 0;
 	private boolean lbPressedLast = false;
@@ -78,6 +79,11 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
 		bl.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 		br.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 		ot.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+		fl.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+		fr.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+		bl.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+		br.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
 		lr.setPosition(LEFT_SERVO_HOME_POS);
 		rr.setPosition(RIGHT_SERVO_HOME_POS);
@@ -139,13 +145,15 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
 		} else if (gamepad1.dpad_left) {
 			x = -0.1;
 		}
-		if (gamepad1.b && !turning180) {
-			turning180 = true;
-			targetHeading = botHeading + Math.PI;
-			if (targetHeading > Math.PI) targetHeading -= 2 * Math.PI;
-			else if (targetHeading < -Math.PI) targetHeading += 2 * Math.PI;
+		if (gamepad1.y) {
+			TARGET_VELOCITY = 640;
 		}
-
+		if (gamepad1.a) {
+			TARGET_VELOCITY = 2100;
+		}
+		if (gamepad1.b) {
+			TARGET_VELOCITY = NORMAL_VELOCITY;
+		}
 		if (turning180) {
 			double error = targetHeading - botHeading;
 			if (error > Math.PI) error -= 2 * Math.PI;
@@ -183,44 +191,56 @@ public class PIDTeleop_FieldCentric extends LinearOpMode {
 	// ----------------------------------------------------------------------------------
 
 	public void controlOuttakeByGamepad() {
-		boolean lbCurrent = gamepad1.left_bumper;
-
-		if (lbCurrent && !lbPressedLast) {
-			lbToggleState = 1 - lbToggleState;
-			ltToggleState = 0;
+		if (gamepad1.leftBumperWasPressed()) {
+			if (TARGET_VELOCITY != OUTTAKE_HOLD_POWER) {
+				TARGET_VELOCITY = OUTTAKE_HOLD_POWER;
+			} else {
+				TARGET_VELOCITY = NORMAL_VELOCITY;
+			}
 		}
-		lbPressedLast = lbCurrent;
-
-		if (lbToggleState == 1) {
-			ot.setVelocity(TARGET_VELOCITY);
-		} else {
-			ot.setPower(OUTTAKE_HOLD_POWER);
-		}
+		ot.setVelocity(TARGET_VELOCITY);
 	}
 
-	// ----------------------------------------------------------------------------------
+	public double lastCommandTime = 0;
+	public boolean lastCommand = true; // true for set, false for home
+	public boolean queuedLaunch = false;
+	public double lastQueue = 0;
 	public void controlSetPositionServos() {
 
 		if (gamepad1.xWasPressed()) {
 			autofiring = !autofiring;
 		}
 		boolean manualFire = gamepad1.rightBumperWasPressed();
-		boolean canLaunch = ot.getVelocity() > TARGET_VELOCITY - 40 && ot.getVelocity() < TARGET_VELOCITY + 20;
+		if (manualFire) {
+			lastQueue = getRuntime();
+			queuedLaunch = true;
+		}
+		if (Math.abs(getRuntime() - lastQueue) > 2) queuedLaunch = false;
+		boolean canLaunch = ot.getVelocity() > TARGET_VELOCITY - 20 && ot.getVelocity() < TARGET_VELOCITY + 10;
 		telemetry.addData("canlaunch", canLaunch);
 		telemetry.addData("autofiring", autofiring);
 		telemetry.addData("manualfire", manualFire);
-		if (Math.abs(getRuntime() - lastServoMove) < 0.3) {
-			// maintain position
-			if (commandSetPosition) {
-				lr.setPosition(LEFT_SERVO_HOME_POS);
-				rr.setPosition(RIGHT_SERVO_HOME_POS);
+		boolean command = canLaunch && (autofiring || queuedLaunch);
+		if (command != lastCommand) {
+			// new command
+			// check if it has been 0.3 seconds to allow previous command to complete
+			if (Math.abs(getRuntime() - lastCommandTime) > 0.6) {
+				lastCommand = command;
+				lastCommandTime = getRuntime();
+				if (queuedLaunch) {
+					queuedLaunch = false;
+				}
 			} else {
-				lr.setPosition(LEFT_SERVO_SET_POS);
-				rr.setPosition(RIGHT_SERVO_SET_POS);
+				// allow previous command to complete
+				command = lastCommand;
 			}
+		}
+		if (command) {
+			lr.setPosition(LEFT_SERVO_SET_POS);
+			rr.setPosition(RIGHT_SERVO_SET_POS);
 		} else {
-			commandSetPosition = canLaunch && (autofiring || manualFire);
-			lastServoMove = getRuntime();
+			lr.setPosition(LEFT_SERVO_HOME_POS);
+			rr.setPosition(RIGHT_SERVO_HOME_POS);
 		}
 	}
 }
