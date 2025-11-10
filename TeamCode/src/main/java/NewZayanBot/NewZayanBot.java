@@ -82,6 +82,8 @@ public class NewZayanBot extends LinearOpMode {
             } else if (gamepad1.left_bumper) {
                 // Left Bumper for Outtake/Reverse (Full Reverse Power)
                 intake.setPower(1);
+            } else {
+                intake.setPower(0);
             }
             
             if (gamepad1.left_trigger > 0) {
