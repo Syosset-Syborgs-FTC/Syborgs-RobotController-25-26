@@ -20,25 +20,21 @@ public class NewZayanBot extends LinearOpMode {
         DcMotor bl = hardwareMap.dcMotor.get("BL");
         DcMotor fr = hardwareMap.dcMotor.get("FR");
         DcMotor br = hardwareMap.dcMotor.get("BR");
+        DcMotor turret = hardwareMap.dcMotor.get("turret");
         DcMotor intake = hardwareMap.dcMotor.get("intake");
         Servo kick = hardwareMap.servo.get("K");
 
-      //  DcMotor turret = hardwareMap.dcMotor.get("turret");
-
-        // Reverse the right side motors. This may be wrong for your setup.
-        // If your robot moves backwards when commanded to go forwards,
-        // reverse the left side instead.
-        // See the note about this earlier on this page.
+        // Reverse the right side motors
         fr.setDirection(DcMotorSimple.Direction.REVERSE);
         br.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        // Retrieve the IMU from the hardware map
+        // Declare IMU
         IMU imu = hardwareMap.get(IMU.class, "imu");
-        // Adjust the orientation parameters to match your robot
+        // Adjust the orientation parameters to match the robot
         IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(
                 RevHubOrientationOnRobot.LogoFacingDirection.LEFT,
                 RevHubOrientationOnRobot.UsbFacingDirection.UP));
-        // Without this, the REV Hub's orientation is assumed to be logo up / USB forward
+
         imu.initialize(parameters);
 
         waitForStart();
@@ -89,11 +85,11 @@ public class NewZayanBot extends LinearOpMode {
             
             if (gamepad1.left_trigger > 0) {
                 // Left Trigger for turret on (Full Power)
-               // turret.setPower(1);
+                turret.setPower(1);
             
             } else {
                 intake.setPower(0);
-              //  turret.setPower(0);
+                turret.setPower(0);
             }
                 
             if (gamepad1.y){
