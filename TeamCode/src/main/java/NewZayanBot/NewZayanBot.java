@@ -35,8 +35,8 @@ public class NewZayanBot extends LinearOpMode {
         turret.setDirection(DcMotorSimple.Direction.REVERSE);
 
         // These motors don't use encoders
-        turret.setRunMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        intake.setRunMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        turret.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         // Declare IMU
         IMU imu = hardwareMap.get(IMU.class, "imu");
