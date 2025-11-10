@@ -38,11 +38,27 @@ public class NewZayanBot extends LinearOpMode {
 
         imu.initialize(parameters);
 
+        AprilTagProcessor tagProcessor = new AprilTagProcessor.Builder().setDrawAxes(true).setDrawCubeProjection(true).setDrawTagID(true).setDrawTagOutline(true).build();
+
+        VisionPortal visionPortal = new VisionPortal.Builder().addProcessor(tagProcessor).setCamera(hardwareMap.get(WebcamName.class, "Webcam 1")).setCameraResolution(new Size(640, 480)).build();
+
         waitForStart();
 
-        if (isStopRequested()) return;
+        while (!isStopRequested() && opModeIsActive()) {
 
-        while (opModeIsActive()) {
+            if (tagProcessor.getDirections().size() > 0) {
+                AprilTagDetection tag = tagProcessor.getDirections().get(0);
+
+                telemetry.addData("x", tag.ftcPose.x);
+                telemetry.addData("y", tag.ftcPose.y);
+                telemetry.addData("z", tag.ftcPose.z);
+                telemetry.addData("yaw", Math.toDegrees(tag.ftcPose.yaw));
+                telemetry.addData("pitch", Math.toDegrees(tag.ftcPose.pitch));
+                telemetry.addData("roll", Math.toDegrees(tag.ftcPose.roll));
+            }
+
+            telemetry.update();
+
             double x = gamepad1.left_stick_x; // Remember, Y stick value is reversed
             double y = -gamepad1.left_stick_y;
             double rx = -gamepad1.right_stick_x;
