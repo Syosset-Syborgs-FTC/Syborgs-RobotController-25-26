@@ -50,13 +50,16 @@ public class NewZayanBot extends LinearOpMode {
 
         AprilTagProcessor tagProcessor = new AprilTagProcessor.Builder().setDrawAxes(true).setDrawCubeProjection(true).setDrawTagID(true).setDrawTagOutline(true).build();
 
-        VisionPortal visionPortal = new VisionPortal.Builder().addProcessor(tagProcessor).setCamera(hardwareMap.get(WebcamName.class, "Webcam 1")).setCameraResolution(new Size(640, 480)).setStreamFormat(StreamFormat.MJPEG).enableLiveView(true).build();
-        
-        visionPortal.setProcessorEnabled(tagProcessor, true);
+        VisionPortal visionPortal = new VisionPortal.Builder().addProcessor(tagProcessor).setCamera(hardwareMap.get(WebcamName.class, "Webcam 1")).setCameraResolution(new Size(640, 480)).enableLiveView(true).build();
 
         waitForStart();
 
         while (!isStopRequested() && opModeIsActive()) {
+
+
+            double yaw   = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
+            double pitch = imu.getRobotYawPitchRollAngles().getPitch(AngleUnit.DEGREES);
+            double roll  = imu.getRobotYawPitchRollAngles().getRoll(AngleUnit.DEGREES);
 
             if (tagProcessor.getDetections().size() > 0) {
                 AprilTagDetection tag = tagProcessor.getDetections().get(0);
@@ -68,6 +71,10 @@ public class NewZayanBot extends LinearOpMode {
                 telemetry.addData("pitch", Math.toDegrees(tag.ftcPose.pitch));
                 telemetry.addData("roll", Math.toDegrees(tag.ftcPose.roll));
             }
+
+            telemetry.addData("Yaw", yaw);
+            telemetry.addData("Pitch", pitch);
+            telemetry.addData("Roll", roll);
 
             telemetry.update();
 
