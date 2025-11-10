@@ -27,6 +27,7 @@ public class NewZayanBot extends LinearOpMode {
         // Reverse the right side motors
         fr.setDirection(DcMotorSimple.Direction.REVERSE);
         br.setDirection(DcMotorSimple.Direction.REVERSE);
+        turret.setDirection(DcMotorSimple.Direction.REVERSE);
 
         // Declare IMU
         IMU imu = hardwareMap.get(IMU.class, "imu");
@@ -77,10 +78,10 @@ public class NewZayanBot extends LinearOpMode {
             
             if (gamepad1.right_bumper) {
                 // Right Bumper for Intake (Full Power)
-                intake.setPower(-1);
+                intake.setPower(1);
             } else if (gamepad1.left_bumper) {
                 // Left Bumper for Outtake/Reverse (Full Reverse Power)
-                intake.setPower(.9);
+                intake.setPower(-1);
             }
             
             if (gamepad1.left_trigger > 0) {
