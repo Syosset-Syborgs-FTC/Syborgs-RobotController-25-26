@@ -13,6 +13,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import android.util.Size;
+import org.firstinspires.ftc.vision.VisionPortal.StreamFormat;
 
 @TeleOp
 public class NewZayanBot extends LinearOpMode {
@@ -49,7 +50,9 @@ public class NewZayanBot extends LinearOpMode {
 
         AprilTagProcessor tagProcessor = new AprilTagProcessor.Builder().setDrawAxes(true).setDrawCubeProjection(true).setDrawTagID(true).setDrawTagOutline(true).build();
 
-        VisionPortal visionPortal = new VisionPortal.Builder().addProcessor(tagProcessor).setCamera(hardwareMap.get(WebcamName.class, "Webcam 1")).setCameraResolution(new Size(640, 480)).build();
+        VisionPortal visionPortal = new VisionPortal.Builder().addProcessor(tagProcessor).setCamera(hardwareMap.get(WebcamName.class, "Webcam 1")).setCameraResolution(new Size(640, 480)).setStreamFormat(StreamFormat.MJPEG).enableLiveView(true).build();
+        
+        visionPortal.setProcessorEnabled(tagProcessor, true);
 
         waitForStart();
 
