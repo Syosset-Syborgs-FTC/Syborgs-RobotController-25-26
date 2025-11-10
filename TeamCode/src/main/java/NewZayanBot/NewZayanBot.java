@@ -34,6 +34,10 @@ public class NewZayanBot extends LinearOpMode {
         br.setDirection(DcMotorSimple.Direction.REVERSE);
         turret.setDirection(DcMotorSimple.Direction.REVERSE);
 
+        // These motors don't use encoders
+        turret.setRunMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        intake.setRunMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
         // Declare IMU
         IMU imu = hardwareMap.get(IMU.class, "imu");
         // Adjust the orientation parameters to match the robot
@@ -51,8 +55,8 @@ public class NewZayanBot extends LinearOpMode {
 
         while (!isStopRequested() && opModeIsActive()) {
 
-            if (tagProcessor.getDirections().size() > 0) {
-                AprilTagDetection tag = tagProcessor.getDirections().get(0);
+            if (tagProcessor.getDetections().size() > 0) {
+                AprilTagDetection tag = tagProcessor.getDetections().get(0);
 
                 telemetry.addData("x", tag.ftcPose.x);
                 telemetry.addData("y", tag.ftcPose.y);
