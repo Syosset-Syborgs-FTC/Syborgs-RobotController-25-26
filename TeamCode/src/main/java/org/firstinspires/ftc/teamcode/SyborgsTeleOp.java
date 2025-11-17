@@ -8,6 +8,8 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
+
+import org.firstinspires.ftc.robotcore.external.Consumer;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
@@ -82,13 +84,11 @@ public class SyborgsTeleOp extends LinearOpMode {
             kick.setPosition(0.4);
         }
 
-
-        // Transfer Servo Control (Toggle)
         if (gamepad1.aWasPressed()) {
             servosRunning = !servosRunning;
-            ml.setPower(servosRunning ? 1.0 : 0.0);
-            mr.setPower(servosRunning ? -1.0 : 0.0);
         }
+        ml.setPower(servosRunning ? 1.0 : 0.0);
+        mr.setPower(servosRunning ? -1.0 : 0.0);
     }
 
     private void driveMecanum() {
@@ -124,11 +124,14 @@ public class SyborgsTeleOp extends LinearOpMode {
         fl = hardwareMap.dcMotor.get("FL");
         fr = hardwareMap.dcMotor.get("FR");
         br = hardwareMap.dcMotor.get("BR");
+
         intake = hardwareMap.dcMotor.get("intake");
         turret1 = (DcMotorEx) hardwareMap.dcMotor.get("turret1");
         turret2 = (DcMotorEx) hardwareMap.dcMotor.get("turret2");
+
         ml = hardwareMap.get(CRServo.class, "ml");
         mr = hardwareMap.get(CRServo.class, "mr");
+
         kick = hardwareMap.servo.get("K");
         imu = hardwareMap.get(IMU.class, "imu");
 
@@ -143,9 +146,18 @@ public class SyborgsTeleOp extends LinearOpMode {
         turret2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        // Adjust the orientation parameters to match the robot
-        IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(RevHubOrientationOnRobot.LogoFacingDirection.LEFT, RevHubOrientationOnRobot.UsbFacingDirection.UP));
+        runForAllMotors(x -> x.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE));
 
+        IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(
+                RevHubOrientationOnRobot.LogoFacingDirection.LEFT,
+                RevHubOrientationOnRobot.UsbFacingDirection.UP
+        ));
         imu.initialize(parameters);
+    }
+    private void runForAllMotors(Consumer<DcMotor> function) {
+        function.accept(fl);
+        function.accept(bl);
+        function.accept(fr);
+        function.accept(br);
     }
 }
