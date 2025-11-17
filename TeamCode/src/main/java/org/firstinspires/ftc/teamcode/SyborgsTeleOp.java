@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -9,14 +10,12 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.vision.VisionPortal;
-import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
-import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import android.util.Size;
-
+import org.firstinspires.ftc.vision.VisionPortal.StreamFormat;
 import com.qualcomm.robotcore.hardware.CRServo;
 
-@TeleOp(name = "Syborgs TeleOp", group = "Robot")
+@TeleOp
 public class SyborgsTeleOp extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
@@ -28,7 +27,8 @@ public class SyborgsTeleOp extends LinearOpMode {
         DcMotor fr = hardwareMap.dcMotor.get("FR"); //  Control Slot 2
         DcMotor br = hardwareMap.dcMotor.get("BR"); //  Control Slot 3
         DcMotor intake = hardwareMap.dcMotor.get("intake"); //  Expansion Slot 0
-        DcMotor turret = hardwareMap.dcMotor.get("turret");
+        DcMotorEx turret1 = (DcMotorEx) hardwareMap.dcMotor.get("turret1");
+        DcMotorEx turret2 = (DcMotorEx) hardwareMap.dcMotor.get("turret2");
         CRServo ml = hardwareMap.get(CRServo.class, "ml"); //  Control Slot 0
         CRServo mr = hardwareMap.get(CRServo.class, "mr"); //  Control Slot 1
         Servo kick = hardwareMap.servo.get("K");
@@ -43,20 +43,17 @@ public class SyborgsTeleOp extends LinearOpMode {
         // Reverse the right side motors
         fl.setDirection(DcMotorSimple.Direction.REVERSE);
         bl.setDirection(DcMotorSimple.Direction.REVERSE);
-        turret.setDirection(DcMotorSimple.Direction.REVERSE);
-
+        turret1.setDirection(DcMotorSimple.Direction.REVERSE);
+        turret2.setDirection(DcMotorSimple.Direction.FORWARD);
         // These motors don't use encoders
-        turret.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        turret1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        turret2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         // Adjust the orientation parameters to match the robot
         IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(RevHubOrientationOnRobot.LogoFacingDirection.LEFT, RevHubOrientationOnRobot.UsbFacingDirection.UP));
 
         imu.initialize(parameters);
-
-        AprilTagProcessor tagProcessor = new AprilTagProcessor.Builder().setDrawAxes(true).setDrawCubeProjection(true).setDrawTagID(true).setDrawTagOutline(true).build();
-
-        VisionPortal visionPortal = new VisionPortal.Builder().addProcessor(tagProcessor).setCamera(hardwareMap.get(WebcamName.class, "Webcam 1")).setCameraResolution(new Size(640, 480)).enableLiveView(true).build();
 
         waitForStart();
 
@@ -66,22 +63,6 @@ public class SyborgsTeleOp extends LinearOpMode {
             double pitch = imu.getRobotYawPitchRollAngles().getPitch(AngleUnit.DEGREES);
             double roll  = imu.getRobotYawPitchRollAngles().getRoll(AngleUnit.DEGREES);
 
-            //  April Tag Telemetry
-            telemetry.addLine("|*==== April Tag Data ===*|");
-            telemetry.addLine("");
-
-            if (tagProcessor.getDetections().size() > 0) {
-
-                AprilTagDetection tag = tagProcessor.getDetections().get(0);
-
-                telemetry.addData("Tag ID", tag.id);
-                telemetry.addData("x", tag.ftcPose.x);
-                telemetry.addData("y", tag.ftcPose.y);
-                telemetry.addData("z", tag.ftcPose.z);
-                telemetry.addData("yaw", Math.toDegrees(tag.ftcPose.yaw));
-                telemetry.addData("pitch", Math.toDegrees(tag.ftcPose.pitch));
-                telemetry.addData("roll", Math.toDegrees(tag.ftcPose.roll));
-            }
 
             telemetry.addLine("");
 
@@ -105,7 +86,7 @@ public class SyborgsTeleOp extends LinearOpMode {
                 imu.resetYaw();
             }
 
-            
+
             double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
 
             // Rotate the movement direction counter to the bot's rotation
@@ -127,59 +108,6 @@ public class SyborgsTeleOp extends LinearOpMode {
             bl.setPower(blPower);
             fr.setPower(frPower);
             br.setPower(brPower);
-            
-
-            
-            // Capture the driver joystick inputs
-            /*double leftX = gamepad1.left_stick_x;
-            double leftY = -gamepad1.left_stick_y; // inverted
-            double rightX = gamepad1.right_stick_x;
-
-            // Read current heading from IMU (degrees)
-            double currentHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
-
-            // Set desired heading for straight-line correction
-            // If left joystick is moving mostly forward/back, maintain last heading
-            double deadzone = 0.1;
-            boolean movingForward = Math.abs(leftY) > deadzone || Math.abs(leftX) > deadzone;
-            if (movingForward) {
-                // Store heading you want to maintain
-                // Could also maintain last heading in a class variable if you want
-                // For simplicity, just correct continuously
-            }
-
-            // Calculate heading error relative to driver direction
-            double headingError = -currentHeading; // negative to rotate in correct direction
-            double kP = 0.02; // small proportional correction, tune experimentally
-
-            // Apply correction to rotate robot minimally to keep heading
-            double correction = kP * headingError;
-
-            // Mecanum math with correction
-            double rotX = leftX;
-            double rotY = leftY;
-
-            double flPower = rotY + rotX + rightX + correction;
-            double blPower = rotY - rotX + rightX + correction;
-            double frPower = rotY - rotX - rightX - correction;
-            double brPower = rotY + rotX - rightX + correction;
-
-            // Normalize powers
-            double max = Math.max(Math.abs(flPower), Math.max(Math.abs(blPower),
-                    Math.max(Math.abs(frPower), Math.abs(brPower))));
-            if (max > 1.0) {
-                flPower /= max;
-                blPower /= max;
-                frPower /= max;
-                brPower /= max;
-            }
-
-            fl.setPower(flPower);
-            bl.setPower(blPower);
-            fr.setPower(frPower);
-            br.setPower(brPower);
-*/
-            
             /*
              * Intake Controls
              * Right Bumper for Toggle Intake (Full Power)
@@ -197,16 +125,18 @@ public class SyborgsTeleOp extends LinearOpMode {
                 intake.setPower(0);
             }
             intakeToggle = gamepad1.right_bumper;
-            
+
 
             // Turret Controls
             if (gamepad1.left_trigger > 0) {
                 // Left Trigger for turret on (Full Power)
-                turret.setPower(1);
+                turret1.setVelocity(1600);
+                turret2.setVelocity(1600);
             } else {
-                turret.setPower(0);
+                turret1.setPower(0.01);
+                turret2.setPower(0.01);
             }
-            
+
 
             // Kick Servo Controls
             if (gamepad1.y) {
