@@ -9,43 +9,136 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.vision.VisionPortal;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import android.util.Size;
-import org.firstinspires.ftc.vision.VisionPortal.StreamFormat;
+import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+
 import com.qualcomm.robotcore.hardware.CRServo;
-
-@TeleOp
+@SuppressWarnings("unused")
+@TeleOp(name = "Syborgs TeleOp", group = "Robot")
 public class SyborgsTeleOp extends LinearOpMode {
+    DcMotor fl, bl, fr, br, intake;
+    DcMotorEx turret1, turret2;
+    CRServo ml, mr;
+    Servo kick;
+    IMU imu;
+    boolean servosRunning = false;
+    boolean intakeRunning = false;
     @Override
-    public void runOpMode() throws InterruptedException {
+    public void runOpMode() {
+        runSetup();
 
-        // Declare things
-        // Make sure your ID's match your configuration
-        DcMotor fl = hardwareMap.dcMotor.get("FL"); //  Control Slot 0
-        DcMotor bl = hardwareMap.dcMotor.get("BL"); //  Control Slot 1
-        DcMotor fr = hardwareMap.dcMotor.get("FR"); //  Control Slot 2
-        DcMotor br = hardwareMap.dcMotor.get("BR"); //  Control Slot 3
-        DcMotor intake = hardwareMap.dcMotor.get("intake"); //  Expansion Slot 0
-        DcMotorEx turret1 = (DcMotorEx) hardwareMap.dcMotor.get("turret1");
-        DcMotorEx turret2 = (DcMotorEx) hardwareMap.dcMotor.get("turret2");
-        CRServo ml = hardwareMap.get(CRServo.class, "ml"); //  Control Slot 0
-        CRServo mr = hardwareMap.get(CRServo.class, "mr"); //  Control Slot 1
-        Servo kick = hardwareMap.servo.get("K");
-        IMU imu = hardwareMap.get(IMU.class, "imu");
+        waitForStart();
 
-        // Declare booleans for "states"
-        boolean servosRunning = false;  //  Transfer Servos State
-        boolean servosToggle = false;   //  Transfer Servos Button Toggle State
-        boolean intakeRunning = false; //  Intake State
-        boolean intakeToggle = false;  //  Intake Button Toggle State
+        while (!isStopRequested() && opModeIsActive()) {
+            handleTelemetry();
 
-        // Reverse the right side motors
+            driveMecanum();
+
+            controlIntakeOuttake();
+        }
+    }
+
+    private void handleTelemetry() {
+        YawPitchRollAngles angles = imu.getRobotYawPitchRollAngles();
+        double yaw   = angles.getYaw(AngleUnit.DEGREES);
+        double pitch = angles.getPitch(AngleUnit.DEGREES);
+        double roll  = angles.getRoll(AngleUnit.DEGREES);
+
+        // IMU Telemetry
+        telemetry.addLine("IMU Data");
+        telemetry.addData("Robot Yaw", yaw);
+        telemetry.addData("Robot Pitch", pitch);
+        telemetry.addData("Robot Roll", roll);
+
+        telemetry.update();
+    }
+
+    private void controlIntakeOuttake() {
+        if (gamepad1.rightBumperWasPressed()) {
+            intakeRunning = !intakeRunning;
+            intake.setPower(-1);
+        } else if (gamepad1.left_bumper) {
+            intake.setPower(1);
+            intakeRunning = false;
+        } else if (!intakeRunning) {
+            intake.setPower(0);
+        }
+
+
+        // Turret Controls
+        if (gamepad1.left_trigger > 0) {
+            // Left Trigger for turret on (Full Power)
+            turret1.setVelocity(1600);
+            turret2.setVelocity(1600);
+        } else {
+            turret1.setPower(0.01);
+            turret2.setPower(0.01);
+        }
+
+
+        // Kick Servo Controls
+        if (gamepad1.y) {
+            kick.setPosition(1);
+        } else {
+            kick.setPosition(0.4);
+        }
+
+
+        // Transfer Servo Control (Toggle)
+        if (gamepad1.aWasPressed()) {
+            servosRunning = !servosRunning;
+            ml.setPower(servosRunning ? 1.0 : 0.0);
+            mr.setPower(servosRunning ? -1.0 : 0.0);
+        }
+    }
+
+    private void driveMecanum() {
+        double x = gamepad1.left_stick_x;
+        double y = -gamepad1.left_stick_y;
+        double rx = gamepad1.right_stick_x;
+
+        if (gamepad1.options) {
+            imu.resetYaw();
+        }
+
+        double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
+
+        double rotX = x * Math.cos(-botHeading) - y * Math.sin(-botHeading);
+        double rotY = x * Math.sin(-botHeading) + y * Math.cos(-botHeading);
+
+        rotX *= 1.1;  // Counteract imperfect strafing
+
+        double denominator = Math.max(Math.abs(rotY) + Math.abs(rotX) + Math.abs(rx), 1);
+        double flPower = (rotY + rotX + rx) / denominator;
+        double blPower = (rotY - rotX + rx) / denominator;
+        double frPower = (rotY - rotX - rx) / denominator;
+        double brPower = (rotY + rotX - rx) / denominator;
+
+        fl.setPower(flPower);
+        bl.setPower(blPower);
+        fr.setPower(frPower);
+        br.setPower(brPower);
+    }
+
+    private void runSetup() {
+        bl = hardwareMap.dcMotor.get("BL");
+        fl = hardwareMap.dcMotor.get("FL");
+        fr = hardwareMap.dcMotor.get("FR");
+        br = hardwareMap.dcMotor.get("BR");
+        intake = hardwareMap.dcMotor.get("intake");
+        turret1 = (DcMotorEx) hardwareMap.dcMotor.get("turret1");
+        turret2 = (DcMotorEx) hardwareMap.dcMotor.get("turret2");
+        ml = hardwareMap.get(CRServo.class, "ml");
+        mr = hardwareMap.get(CRServo.class, "mr");
+        kick = hardwareMap.servo.get("K");
+        imu = hardwareMap.get(IMU.class, "imu");
+
+
         fl.setDirection(DcMotorSimple.Direction.REVERSE);
         bl.setDirection(DcMotorSimple.Direction.REVERSE);
+
         turret1.setDirection(DcMotorSimple.Direction.REVERSE);
         turret2.setDirection(DcMotorSimple.Direction.FORWARD);
-        // These motors don't use encoders
+
         turret1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         turret2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         intake.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -54,177 +147,5 @@ public class SyborgsTeleOp extends LinearOpMode {
         IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(RevHubOrientationOnRobot.LogoFacingDirection.LEFT, RevHubOrientationOnRobot.UsbFacingDirection.UP));
 
         imu.initialize(parameters);
-
-        waitForStart();
-
-        while (!isStopRequested() && opModeIsActive()) {
-
-            double yaw   = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
-            double pitch = imu.getRobotYawPitchRollAngles().getPitch(AngleUnit.DEGREES);
-            double roll  = imu.getRobotYawPitchRollAngles().getRoll(AngleUnit.DEGREES);
-
-
-            telemetry.addLine("");
-
-            // IMU Telemetry
-            telemetry.addLine("|*==== IMU Data ===*|");
-            telemetry.addLine("");
-            telemetry.addData("Robot Yaw", yaw);
-            telemetry.addData("Robot Pitch", pitch);
-            telemetry.addData("Robot Roll", roll);
-
-            telemetry.update();
-
-            double x = gamepad1.left_stick_x; // Remember, Y stick value is reversed
-            double y = -gamepad1.left_stick_y;
-            double rx = gamepad1.right_stick_x;
-
-            // This button choice was made so that it is hard to hit on accident,
-            // it can be freely changed based on preference.
-            // The equivalent button is start on Xbox-style controllers.
-            if (gamepad1.options) {
-                imu.resetYaw();
-            }
-
-
-            double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
-
-            // Rotate the movement direction counter to the bot's rotation
-            double rotX = x * Math.cos(-botHeading) - y * Math.sin(-botHeading);
-            double rotY = x * Math.sin(-botHeading) + y * Math.cos(-botHeading);
-
-            rotX *= 1.1;  // Counteract imperfect strafing
-
-            // Denominator is the largest motor power (absolute value) or 1
-            // This ensures all the powers maintain the same ratio,
-            // but only if at least one is out of the range [-1, 1]
-            double denominator = Math.max(Math.abs(rotY) + Math.abs(rotX) + Math.abs(rx), 1);
-            double flPower = (rotY + rotX + rx) / denominator;
-            double blPower = (rotY - rotX + rx) / denominator;
-            double frPower = (rotY - rotX - rx) / denominator;
-            double brPower = (rotY + rotX - rx) / denominator;
-
-            fl.setPower(flPower);
-            bl.setPower(blPower);
-            fr.setPower(frPower);
-            br.setPower(brPower);
-            /*
-             * Intake Controls
-             * Right Bumper for Toggle Intake (Full Power)
-             * Left Bumper for Outtake/Reverse (Full Reverse Power)
-             */
-            if (gamepad1.right_bumper && !intakeToggle) {
-                intakeRunning = !intakeRunning;
-                intake.setPower(-1);
-            } else if (gamepad1.left_bumper) {
-                intake.setPower(1);
-                if (intakeRunning) {
-                    intakeRunning = !intakeRunning;
-                }
-            } else if (!intakeRunning) {
-                intake.setPower(0);
-            }
-            intakeToggle = gamepad1.right_bumper;
-
-
-            // Turret Controls
-            if (gamepad1.left_trigger > 0) {
-                // Left Trigger for turret on (Full Power)
-                turret1.setVelocity(1600);
-                turret2.setVelocity(1600);
-            } else {
-                turret1.setPower(0.01);
-                turret2.setPower(0.01);
-            }
-
-
-            // Kick Servo Controls
-            if (gamepad1.y) {
-                kick.setPosition(1);
-            } else {
-                kick.setPosition(0.4);
-            }
-
-
-            // Transfer Servo Control (Toggle)
-            if (gamepad1.a && !servosToggle) {
-                servosRunning = !servosRunning;
-                ml.setPower(servosRunning ? 1.0 : 0.0);
-                mr.setPower(servosRunning ? -1.0 : 0.0);
-            }
-            servosToggle = gamepad1.a;
-        }
-    }
-
-
-    public void driveStraight(DcMotor fl, DcMotor bl, DcMotor fr, DcMotor br, IMU imu, double inches, double power) {
-
-        // 96 mm wheels and GoBilda 5201 series
-        double wheelDiameterInches = 96.0 / 25.4;
-        double ticksPerRev = 537.6;
-        double gearRatio = 1.0;
-
-        // Convert inches to encoder ticks
-        int targetTicks = (int)((inches / (Math.PI * wheelDiameterInches)) * ticksPerRev * gearRatio);
-
-        // Reset encoders
-        fl.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        bl.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        fr.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        br.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
-        // Set target positions
-        fl.setTargetPosition(targetTicks);
-        bl.setTargetPosition(targetTicks);
-        fr.setTargetPosition(targetTicks);
-        br.setTargetPosition(targetTicks);
-
-        // Run to position
-        fl.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        bl.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        fr.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        br.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-
-        // Brake on stop
-        fl.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        bl.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        fr.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        br.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
-        // Capture current heading
-        double desiredHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
-        double kP = 0.05; // heading correction
-
-        // Start moving
-        fl.setPower(power);
-        bl.setPower(power);
-        fr.setPower(power);
-        br.setPower(power);
-
-        // Maintain heading while moving
-        while (opModeIsActive() && (fl.isBusy() || bl.isBusy() || fr.isBusy() || br.isBusy())) {
-
-            double currentHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
-            double headingError = desiredHeading - currentHeading;
-            double correction = kP * headingError;
-
-            // Apply correction to left/right motors
-            fl.setPower(power + correction);
-            bl.setPower(power + correction);
-            fr.setPower(power - correction);
-            br.setPower(power - correction);
-        }
-
-        // Stop motors
-        fl.setPower(0);
-        bl.setPower(0);
-        fr.setPower(0);
-        br.setPower(0);
-
-        // Reset to driver mode
-        fl.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        bl.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        fr.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        br.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
 }
