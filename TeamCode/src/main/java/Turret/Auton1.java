@@ -1,4 +1,4 @@
-package Starterbot;
+package Turret;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -12,7 +12,7 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 
 @Autonomous(name = "Auton", group = "Robot")
-public class Auton2 extends LinearOpMode {
+public class Auton1 extends LinearOpMode {
     private DcMotor fl, fr, bl, br;
     private Servo lr; // Left Roller SERVO (Positional)
     private Servo rr; // Right Roller SERVO (Positional)
