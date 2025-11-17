@@ -18,7 +18,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import java.util.List;
 
 @TeleOp
-public class AprilTagTurretTeleOp extends LinearOpMode {
+public class AprilTagTurret extends LinearOpMode {
 
     private DcMotor frontLeftMotor, backLeftMotor, frontRightMotor, backRightMotor;
     private DcMotor intakeMotor, turretMotor, launcherMotor;
