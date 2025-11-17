@@ -16,8 +16,8 @@ import android.util.Size;
 
 import com.qualcomm.robotcore.hardware.CRServo;
 
-@TeleOp
-public class NewZayanBot extends LinearOpMode {
+@TeleOp(name = "Syborgs TeleOp", group = "Robot")
+public class SyborgsTeleOp extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
 
