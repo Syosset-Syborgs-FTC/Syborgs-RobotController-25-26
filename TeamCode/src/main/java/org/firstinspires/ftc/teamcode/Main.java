@@ -30,8 +30,6 @@ public class Main extends LinearOpMode {
         boolean intakeToggle = false;   //  Intake button toggle
         boolean shooterRunning = false; //  Shooter motors
         boolean shooterToggle = false;  //  Shooter motors button toggle
-        boolean kickRunning = false;    //  Kick servo
-        boolean kickToggle = false;     // Kick servo toggle
 
 
         /*
@@ -52,8 +50,8 @@ public class Main extends LinearOpMode {
          * rt is servo 5
          */
         DcMotor fl = hardwareMap.dcMotor.get("fl");
-        DcMotor bl = hardwareMap.dcMotor.get("bl");
         DcMotor fr = hardwareMap.dcMotor.get("fr");
+        DcMotor bl = hardwareMap.dcMotor.get("bl");
         DcMotor br = hardwareMap.dcMotor.get("br");
         DcMotor intake = hardwareMap.dcMotor.get("intake");
         DcMotor lfw = hardwareMap.dcMotor.get("lfw");    // Left fly wheel
@@ -163,35 +161,39 @@ public class Main extends LinearOpMode {
             if (gamepad1.right_bumper && !intakeToggle) {
                 intakeRunning = !intakeRunning;
                 intake.setPower (-1);
-                lt.setPower (intakeRunning ? 1.0 : 0.0);
-                tt.setPower (intakeRunning ? 1.0 : 0.0);
-                rt.setPower (intakeRunning ? -1.0 : 0.0);
+                lt.setPower (1.0);
+                tt.setPower (1.0);
+                rt.setPower (-1.0);
             }
             else if (gamepad1.left_bumper) {
                 intake.setPower (1);
-                lt.setPower (!intakeRunning ? -1.0 : 0.0);
-                tt.setPower (!intakeRunning ? -1.0 : 0.0);
-                rt.setPower (!intakeRunning ? 1.0 : 0.0);
+                lt.setPower (-1.0);
+                tt.setPower (-1.0);
+                rt.setPower (1.0);
                 if (intakeRunning) {
                     intakeRunning = !intakeRunning;
+                    lt.setPower (0.0);
+                    tt.setPower (0.0);
+                    rt.setPower (0.0);
                 }
             }
             else if (!intakeRunning) {
                 intake.setPower (0);
+                lt.setPower (0.0);
+                tt.setPower (0.0);
+                rt.setPower (0.0);
             }
             intakeToggle = gamepad1.right_bumper;
+            lt.setPower (0.0);
+            tt.setPower (0.0);
+            rt.setPower (0.0);
 
 
             // Kick servo control
-            if (gamepad1.right_trigger > 0.1 && !kickToggle) {
-                kickRunning = !kickRunning;
+            if (gamepad1.right_trigger > 0.1) {
                 kick.setPosition (0.7);
-                sleep (300);
-            }
-            else {
                 kick.setPosition (0.0);
             }
-            kickToggle = gamepad1.right_trigger > 0.1;
 
 
             //  Shooter
