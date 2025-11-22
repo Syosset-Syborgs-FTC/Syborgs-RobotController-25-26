@@ -26,8 +26,10 @@ public class Main extends LinearOpMode {
         // Declaring boolean states
         boolean servosRunning = false;  //  Transfer servos
         boolean servosToggle = false;   //  Transfer servos button toggle
-        boolean intakeRunning = false;  //  Intake state
-        boolean intakeToggle = false;   //  Intake button toggle
+        boolean intakeIn = false;  //  Intake in
+        boolean intakeOut = false; //  Intake out
+        boolean intakeToggleR = false;   //  Intake button toggle
+        boolean intakeToggleL = false;
         boolean shooterRunning = false; //  Shooter motors
         boolean shooterToggle = false;  //  Shooter motors button toggle
 
@@ -155,44 +157,43 @@ public class Main extends LinearOpMode {
             /*  
              *  Intake controls
              *  Right bumper for toggle intake (full power)
-             *      also pushes the balls into the shooter with transition motors
+             *      also pushes the balls into the shooter with transition wheels
              *  Left bumper for outtake/reverse (full reverse power)
+             *      also pushes the balls towrads the intake with transition wheels
              */
-            if (gamepad1.right_bumper && !intakeToggle) {
-                intakeRunning = !intakeRunning;
+            if (gamepad1.right_bumper && !intakeToggleR) {
+                
+            }
+/*
+            if (gamepad1.right_bumper && !intakeToggleR) {
+                intakeRunning = true;
                 intake.setPower (-1);
                 lt.setPower (1.0);
                 tt.setPower (1.0);
                 rt.setPower (-1.0);
             }
-            else if (gamepad1.left_bumper) {
+            if (gamepad1.left_bumper && !intakeToggleL) {
+                intakeRunning = true;
                 intake.setPower (1);
                 lt.setPower (-1.0);
                 tt.setPower (-1.0);
                 rt.setPower (1.0);
-                if (intakeRunning) {
-                    intakeRunning = !intakeRunning;
-                    lt.setPower (0.0);
-                    tt.setPower (0.0);
-                    rt.setPower (0.0);
-                }
             }
-            else if (!intakeRunning) {
+            if (!intakeRunning) {
                 intake.setPower (0);
                 lt.setPower (0.0);
                 tt.setPower (0.0);
                 rt.setPower (0.0);
             }
-            intakeToggle = gamepad1.right_bumper;
-            lt.setPower (0.0);
-            tt.setPower (0.0);
-            rt.setPower (0.0);
-
+            intakeRunning = false;
+            intakeToggleR = gamepad1.right_bumper;
+            intakeToggleL = gamepad1.left_bumper;
+*/
 
             // Kick servo control
             if (gamepad1.right_trigger > 0.1) {
-                kick.setPosition (0.7);
-                kick.setPosition (0.0);
+                kick.setPosition (0.4);
+                kick.setPosition (0.3);
             }
 
 
@@ -204,20 +205,8 @@ public class Main extends LinearOpMode {
             }
             shooterToggle = gamepad1.left_trigger > 0.1;
 
-            //  Transfer servo control (toggle)
-            /*
-            if (gamepad1.a && !servosToggle) {
-                servosRunning = !servosRunning;
-                lt.setPower (servosRunning ? 1.0 : 0.0);
-                tt.setPower (servosRunning ? 1.0 : 0.0);
-                rt.setPower (servosRunning ? -1.0 : 0.0);
-            }
-            servosToggle = gamepad1.a;
-            */
 
-            // --- ANGLE SERVO CONTROL (DPAD) ---
-            // WARNING: Adding 1 or subtracting 1 will instantly set the servo to 1.0 or 0.0.
-            // For fine control, you should add a very small value (e.g., 0.01) and use edge detection.
+            //  Angle Servo Control (DPAD)
             if (gamepad1.dpad_up) {
                 // Moving the servo positions by a small increment (0.01) is safer
                 al.setPosition(Math.min(1.0, al.getPosition() + 0.01));
