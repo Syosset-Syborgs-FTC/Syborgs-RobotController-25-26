@@ -20,11 +20,13 @@ public class SlopeBot extends LinearOpMode {
         DcMotor bl = hardwareMap.dcMotor.get("bl"); // CH M2
         DcMotor br = hardwareMap.dcMotor.get("br"); // CH M3
         DcMotor intake = hardwareMap.dcMotor.get("intake"); // EH M0
+        DcMotor flywheel = hardwareMap.dcMotor.get("flywheel"); // EH M1
 
         CRServo cycle = hardwareMap.crservo.get("cycle"); // CH S0
         CRServo cycle2 = hardwareMap.crservo.get("cycle2"); // CH S1
 
-        Servo angle = hardwareMap.servo.get("angle"); // CH S2
+        Servo kick = hardwareMap.servo.get("kick"); // CH S2
+        Servo angle = hardwareMap.servo.get("angle"); // CH S3
 
         IMU imu = hardwareMap.get(IMU.class, "imu");
         
