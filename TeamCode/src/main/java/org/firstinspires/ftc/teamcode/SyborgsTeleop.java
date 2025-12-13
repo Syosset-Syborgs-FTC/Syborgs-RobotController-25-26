@@ -6,18 +6,27 @@ import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
-import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
-import org.firstinspires.ftc.teamcode.tuning.TuningOpModes;
+import java.util.Optional;
 
 public class SyborgsTeleop extends LinearOpMode {
-	private Limelight3A limelight;
-
+	LimeLightAprilTag ll;
 	@Override
 	public void runOpMode() throws InterruptedException {
 		telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 		MecanumDrive drive = new MecanumDrive(hardwareMap, new Pose2d(0, 0, 0));
+		ll = new LimeLightAprilTag(hardwareMap);
+		while (opModeInInit()) {
+			Optional<Pose2d> pose = ll.localizeRobotMT1();
+			if (pose.isPresent()) {
+				showPose(pose.get());
+				drive.localizer.setPose(pose.get());
+			} else {
+				telemetry.addData("Pose", "AprilTags not available");
+			}
+			telemetry.update();
+		}
 
 		waitForStart();
 
@@ -33,15 +42,23 @@ public class SyborgsTeleop extends LinearOpMode {
 			drive.updatePoseEstimate();
 
 			Pose2d pose = drive.localizer.getPose();
-			telemetry.addData("x", pose.position.x);
-			telemetry.addData("y", pose.position.y);
-			telemetry.addData("heading (deg)", Math.toDegrees(pose.heading.toDouble()));
+			double yaw = pose.heading.log();
+			ll.updateRobotOrientation(yaw);
+			telemetry.addLine("AprilTag estimated position");
+			ll.localizeRobotMT2().ifPresent(this::showPose);
 			telemetry.update();
+
 
 			TelemetryPacket packet = new TelemetryPacket();
 			packet.fieldOverlay().setStroke("#3F51B5");
 			Drawing.drawRobot(packet.fieldOverlay(), pose);
 			FtcDashboard.getInstance().sendTelemetryPacket(packet);
 		}
+	}
+	public void showPose(Pose2d pose) {
+		telemetry.addData("x", pose.position.x);
+		telemetry.addData("y", pose.position.y);
+		telemetry.addData("heading (deg)", Math.toDegrees(pose.heading.toDouble()));
+
 	}
 }

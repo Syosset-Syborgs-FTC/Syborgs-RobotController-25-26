@@ -64,7 +64,8 @@ public final class MecanumDrive {
                 RevHubOrientationOnRobot.UsbFacingDirection.UP;
 
         // drive model parameters
-        public double inPerTick = 1;
+        // inPerTick is 1/(13.26291192 ticks/mm of gobilda swing arm)/(25.4 mm/inch)
+        public double inPerTick = 0.0029684340043598417;
         public double lateralInPerTick = inPerTick;
         public double trackWidthTicks = 0;
 
