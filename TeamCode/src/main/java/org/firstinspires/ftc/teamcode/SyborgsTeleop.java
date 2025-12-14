@@ -7,10 +7,12 @@ import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+
 import java.util.Optional;
 
 public class SyborgsTeleop extends LinearOpMode {
 	LimeLightAprilTag ll;
+
 	@Override
 	public void runOpMode() {
 		telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -57,11 +59,14 @@ public class SyborgsTeleop extends LinearOpMode {
 			showPose(mt2Pose);
 
 			telemetry.update();
-			telemetry.addData("Obelisk ID", ll.getObeliskID(pose).map(x-> {
+			telemetry.addData("Obelisk ID", ll.getObeliskID(pose).map(x -> {
 				switch (x) {
-					case 21 : return "GPP";
-					case 22 : return "PGP";
-					case 23 : return "PPG";
+					case 21:
+						return "GPP";
+					case 22:
+						return "PGP";
+					case 23:
+						return "PPG";
 					default:
 						return x.toString();
 				}
@@ -80,11 +85,13 @@ public class SyborgsTeleop extends LinearOpMode {
 			FtcDashboard.getInstance().sendTelemetryPacket(packet);
 		}
 	}
+
 	public void showPose(Pose2d pose) {
 		telemetry.addData("x", pose.position.x);
 		telemetry.addData("y", pose.position.y);
 		telemetry.addData("heading (deg)", Math.toDegrees(pose.heading.toDouble()));
 	}
+
 	@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 	public void showPose(Optional<Pose2d> pose) {
 		if (pose.isPresent()) {

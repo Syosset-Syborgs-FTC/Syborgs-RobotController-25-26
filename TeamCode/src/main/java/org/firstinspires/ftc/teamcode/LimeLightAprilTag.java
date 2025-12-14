@@ -18,23 +18,25 @@ import java.util.stream.Collectors;
 
 public class LimeLightAprilTag {
 	Limelight3A limelight;
+
 	public LimeLightAprilTag(HardwareMap hardwareMap) {
 		limelight = hardwareMap.get(Limelight3A.class, "limelight");
 		limelight.setPollRateHz(100);
 		limelight.start();
 	}
+
 	public void updateRobotOrientation(double yaw) {
 		limelight.updateRobotOrientation(yaw);
-
 	}
+
 	public Optional<Pose2d> localizeRobotMT2() {
 		LLResult result = limelight.getLatestResult();
 		if (result != null && result.isValid()) {
 			return Optional.of(flattenPose3DTo2d(result.getBotpose_MT2()));
 		}
 		return Optional.empty();
-
 	}
+
 	public Optional<Pose2d> localizeRobotMT1() {
 		LLResult result = limelight.getLatestResult();
 		if (result != null && result.isValid()) {
@@ -43,6 +45,7 @@ public class LimeLightAprilTag {
 		}
 		return Optional.empty();
 	}
+
 	public static Pose2d flattenPose3DTo2d(Pose3D pose3D) {
 		Position p = pose3D.getPosition().toUnit(DistanceUnit.INCH);
 		double x = p.x;
@@ -54,6 +57,7 @@ public class LimeLightAprilTag {
 
 		return new Pose2d(x, y, heading);
 	}
+
 	public Optional<Integer> getObeliskID(Pose2d robotPose) {
 		LLResult result = limelight.getLatestResult();
 		if (result != null && result.isValid()) {
@@ -61,7 +65,7 @@ public class LimeLightAprilTag {
 					.getFiducialResults()
 					.stream()
 					.filter(x ->
-						x.getFiducialId() == 21 || x.getFiducialId() == 22 || x.getFiducialId() == 23
+							x.getFiducialId() == 21 || x.getFiducialId() == 22 || x.getFiducialId() == 23
 					) // Filter for obelisk tags
 					.collect(Collectors.toList());
 			if (fiducials.isEmpty()) return Optional.empty();
