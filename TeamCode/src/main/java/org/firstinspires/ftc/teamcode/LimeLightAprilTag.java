@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
@@ -20,13 +22,13 @@ public class LimeLightAprilTag {
 	Limelight3A limelight;
 
 	public LimeLightAprilTag(HardwareMap hardwareMap) {
-		limelight = hardwareMap.get(Limelight3A.class, "limelight");
+		limelight = hardwareMap.get(Limelight3A.class, "Limelight3A");
 		limelight.setPollRateHz(100);
 		limelight.start();
 	}
 
 	public void updateRobotOrientation(double yaw) {
-		limelight.updateRobotOrientation(yaw);
+		limelight.updateRobotOrientation(Math.toDegrees(yaw));
 	}
 
 	public Optional<Pose2d> localizeRobotMT2() {
@@ -78,7 +80,12 @@ public class LimeLightAprilTag {
 					Pose2d aprilTagInRobotSpace = flattenPose3DTo2d(fiducial.getTargetPoseRobotSpace());
 					Pose2d aprilTagInFieldSpace = robotPose.times(aprilTagInRobotSpace); // apply transformation
 
+					TelemetryPacket packet = new TelemetryPacket();
+					packet.fieldOverlay().setStroke("#000000");
+					Drawing.drawRobot(packet.fieldOverlay(), aprilTagInFieldSpace);
+					FtcDashboard.getInstance().sendTelemetryPacket(packet);
 					double heading = aprilTagInFieldSpace.heading.log(); // [-pi, pi]
+
 					if (Math.abs(heading) < Math.toRadians(20)) {
 						return Optional.of(fiducial.getFiducialId());
 					}

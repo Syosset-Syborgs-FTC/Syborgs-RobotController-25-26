@@ -7,97 +7,115 @@ import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import java.util.Optional;
-
+@TeleOp
 public class SyborgsTeleop extends LinearOpMode {
 	LimeLightAprilTag ll;
-
+	HeadingController headingController = new HeadingController();
+	private boolean autoAlign = false;
+	MecanumDrive drive;
+	Shooter shooter;
+		boolean localized = false;
 	@Override
 	public void runOpMode() {
 		telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
-		MecanumDrive drive = new MecanumDrive(hardwareMap, new Pose2d(0, 0, 0));
+		drive = new MecanumDrive(hardwareMap, new Pose2d(0, 0, 0));
 		ll = new LimeLightAprilTag(hardwareMap);
+		shooter = new Shooter(hardwareMap);
 		while (opModeInInit()) {
-			Optional<Pose2d> pose = ll.localizeRobotMT1();
-			if (pose.isPresent()) {
-				showPose(pose.get());
-				drive.localizer.setPose(pose.get());
-			} else {
-				telemetry.addData("Pose", "AprilTags not available");
-			}
-			telemetry.update();
+			runInitLoop();
 		}
 
 		waitForStart();
 
 		while (opModeIsActive()) {
+			if (gamepad1.yWasPressed()) {
+				autoAlign = !autoAlign;
+				if (autoAlign) {
+					headingController.reset();
+				}
+			}
+			telemetry.addData("Auto Align", autoAlign);
+			Vector2d linearMotion = new Vector2d(
+					gamepad1.left_stick_y,
+					gamepad1.left_stick_x
+			);
+			drive.updatePoseEstimate();
+			Pose2d pose = drive.localizer.getPose();
+			double turnPower = headingController.getTurnPower(pose, -72, Common.alliance == Common.Alliance.Red ? 72 : -72);
+
+
 			drive.setDrivePowers(new PoseVelocity2d(
-					new Vector2d(
-							-gamepad1.left_stick_y,
-							-gamepad1.left_stick_x
-					),
-					-gamepad1.right_stick_x
+					Common.rotate(linearMotion, -drive.localizer.getPose().heading.toDouble()),
+					autoAlign? turnPower: -gamepad1.right_stick_x
 			));
 
-			drive.updatePoseEstimate();
-
-
-			Pose2d pose = drive.localizer.getPose();
+			shooter.maintainVelocity(0);
+			telemetry.addData("Shooter Velocity", shooter.getVelocity());
 			double yaw = pose.heading.log();
+
 			ll.updateRobotOrientation(yaw);
+			if (!localized) {
+				ll.localizeRobotMT1().ifPresent(drive.localizer::setPose);
+			}
 
-			telemetry.addLine("Pinpoint estimated position");
-			showPose(pose);
-
-			telemetry.addLine("MegaTag1 estimated position");
-			Optional<Pose2d> mt1Pose = ll.localizeRobotMT1();
-			showPose(mt1Pose);
-
-			telemetry.addLine("MegaTag2 estimated position");
-			Optional<Pose2d> mt2Pose = ll.localizeRobotMT2();
-			showPose(mt2Pose);
-
-			telemetry.update();
-			telemetry.addData("Obelisk ID", ll.getObeliskID(pose).map(x -> {
-				switch (x) {
-					case 21:
-						return "GPP";
-					case 22:
-						return "PGP";
-					case 23:
-						return "PPG";
-					default:
-						return x.toString();
-				}
-			}).orElse("No obelisk apriltag visible"));
-
-			TelemetryPacket packet = new TelemetryPacket();
-			packet.fieldOverlay().setStroke("#4CAF50"); // green for mt1 pose
-			mt1Pose.ifPresent(p -> Drawing.drawRobot(packet.fieldOverlay(), p));
-
-			packet.fieldOverlay().setStroke("#FF5722"); // red for mt2 pose
-			mt2Pose.ifPresent(p -> Drawing.drawRobot(packet.fieldOverlay(), p));
-
-			packet.fieldOverlay().setStroke("#3F51B5"); // blue for pinpoint pose
-			Drawing.drawRobot(packet.fieldOverlay(), pose);
-
-			FtcDashboard.getInstance().sendTelemetryPacket(packet);
+			sendPoseToDash(pose);
 		}
 	}
 
-	public void showPose(Pose2d pose) {
-		telemetry.addData("x", pose.position.x);
-		telemetry.addData("y", pose.position.y);
-		telemetry.addData("heading (deg)", Math.toDegrees(pose.heading.toDouble()));
-	}
-
-	@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-	public void showPose(Optional<Pose2d> pose) {
+	private void runInitLoop() {
+		Optional<Pose2d> pose = ll.localizeRobotMT1();
 		if (pose.isPresent()) {
-			showPose(pose.get());
+			TelemetryPacket packet = new TelemetryPacket();
+
+			packet.fieldOverlay().setStroke("#4CAF50"); // green for mt1 pose
+			Drawing.drawRobot(packet.fieldOverlay(), pose.get());
+			FtcDashboard.getInstance().sendTelemetryPacket(packet);
+
+			drive.localizer.setPose(pose.get());
+			localized = true;
 		} else {
-			telemetry.addData("Pose", "not available");
+			telemetry.addData("Pose", "AprilTags not available");
 		}
+		telemetry.addData("Alliance (press right bumper to change): ", Common.alliance.toString());
+		if (gamepad1.rightBumperWasPressed()) {
+			Common.alliance = Common.alliance.getOpposite();
+		}
+		telemetry.update();
 	}
+
+	private void sendPoseToDash(Pose2d pose) {
+		Optional<Pose2d> mt1Pose = ll.localizeRobotMT1();
+		Optional<Pose2d> mt2Pose = ll.localizeRobotMT2();
+
+		telemetry.update();
+		telemetry.addData("Obelisk ID", ll.getObeliskID(pose).map(x -> {
+			switch (x) {
+				case 21:
+					return "GPP";
+				case 22:
+					return "PGP";
+				case 23:
+					return "PPG";
+				default:
+					return x.toString();
+			}
+		}).orElse("No obelisk apriltag visible"));
+
+		TelemetryPacket packet = new TelemetryPacket();
+		packet.fieldOverlay().setStroke("#4CAF50"); // green for mt1 pose
+		mt1Pose.ifPresent(p -> Drawing.drawRobot(packet.fieldOverlay(), p));
+
+		packet.fieldOverlay().setStroke("#FF5722"); // red for mt2 pose
+		mt2Pose.ifPresent(p -> Drawing.drawRobot(packet.fieldOverlay(), p));
+
+		packet.fieldOverlay().setStroke("#3F51B5"); // blue for pinpoint pose
+		Drawing.drawRobot(packet.fieldOverlay(), pose);
+
+		FtcDashboard.getInstance().sendTelemetryPacket(packet);
+	}
+
+
 }
