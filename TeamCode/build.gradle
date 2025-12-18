@@ -62,5 +62,6 @@ dependencies {
     implementation ("com.acmerobotics.roadrunner:actions:1.0.1"){
         exclude group: "com.acmerobotics.dashboard"
     }
-    implementation("com.acmerobotics.slothboard:dashboard:0.2.4+0.4.17")
+//    implementation("com.acmerobotics.slothboard:dashboard:0.2.4+0.4.17")
+    implementation files('libs/FtcDashboard-debug.aar')
 }
