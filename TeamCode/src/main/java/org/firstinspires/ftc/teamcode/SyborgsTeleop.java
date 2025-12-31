@@ -17,7 +17,8 @@ public class SyborgsTeleop extends LinearOpMode {
 	private boolean autoAlign = false;
 	MecanumDrive drive;
 	Shooter shooter;
-		boolean localized = false;
+	boolean localized = false;
+	boolean leftTriggerToggle = false;
 	@Override
 	public void runOpMode() {
 		telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -43,8 +44,9 @@ public class SyborgsTeleop extends LinearOpMode {
 		ll.stop();
 	}
 	private void handleShooterInput() {
+		boolean firstShot = gamepad1.rightBumperWasPressed();
 		if (gamepad1.right_bumper) {
-			if (gamepad1.rightBumperWasPressed()) {
+			if (firstShot) {
 				shooter.outtakeBalls(); // for a short time, then intake after
 			} else {
 				shooter.intakeBalls();
@@ -55,6 +57,18 @@ public class SyborgsTeleop extends LinearOpMode {
 			shooter.feedBalls();
 		} else {
 			shooter.stopFeeding();
+		}
+		if (gamepad1.left_bumper) {
+			shooter.outtakeBalls();
+		}
+
+		if (gamepad1.left_trigger > 0.5) {
+			leftTriggerToggle = !leftTriggerToggle;
+		}
+		if (leftTriggerToggle) {
+			shooter.maintainVelocity(1400);
+		} else {
+			shooter.maintainVelocity(0);
 		}
 	}
 
