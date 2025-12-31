@@ -37,7 +37,18 @@ public class Shooter {
 	public double getVelocity() {
 		return flywheel.getVelocity();
 	}
-	public void transfer() {
+	public void feedBalls() {
 		transfer.setPower(-1);
+		cycle.setPower(1);
+	}
+	public void stopFeeding() {
+		transfer.setPower(0);
+		cycle.setPower(0);
+	}
+	public void outtakeBalls() {
+		intake.setPower(-1);
+	}
+	public void intakeBalls() {
+		intake.setPower(1);
 	}
 }

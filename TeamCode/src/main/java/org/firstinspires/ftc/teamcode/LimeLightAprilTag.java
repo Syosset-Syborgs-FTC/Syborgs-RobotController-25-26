@@ -8,6 +8,7 @@ import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
@@ -21,8 +22,15 @@ import java.util.stream.Collectors;
 public class LimeLightAprilTag {
 	Limelight3A limelight;
 
-	public LimeLightAprilTag(HardwareMap hardwareMap) {
-		limelight = hardwareMap.get(Limelight3A.class, "Limelight3A");
+	PortForwarder forwarder;
+	Telemetry telemetry;
+	public LimeLightAprilTag(HardwareMap hardwareMap, Telemetry telemetry) {
+		this.telemetry = telemetry;
+		limelight = hardwareMap.get(Limelight3A.class, "LimeLight3a");
+		forwarder = new PortForwarder("172.29.0.1", 5800, 5801, 5802, 5803, 5804, 5805, 5806, 5807, 5808, 5809);
+		forwarder.start();
+
+		telemetry.addLine("Forwarding 172.29.0.1:5801 -> 0.0.0.0:5801");
 		limelight.setPollRateHz(100);
 		limelight.start();
 	}
@@ -93,5 +101,8 @@ public class LimeLightAprilTag {
 			}
 		}
 		return Optional.empty();
+	}
+	public void stop() {
+		forwarder.stop();
 	}
 }

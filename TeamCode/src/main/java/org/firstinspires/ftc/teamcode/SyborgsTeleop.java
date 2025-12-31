@@ -22,7 +22,7 @@ public class SyborgsTeleop extends LinearOpMode {
 	public void runOpMode() {
 		telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 		drive = new MecanumDrive(hardwareMap, new Pose2d(0, 0, 0));
-		ll = new LimeLightAprilTag(hardwareMap);
+		ll = new LimeLightAprilTag(hardwareMap, telemetry);
 		shooter = new Shooter(hardwareMap);
 		while (opModeInInit()) {
 			runInitLoop();
@@ -37,32 +37,53 @@ public class SyborgsTeleop extends LinearOpMode {
 					headingController.reset();
 				}
 			}
-			telemetry.addData("Auto Align", autoAlign);
-			Vector2d linearMotion = new Vector2d(
-					gamepad1.left_stick_y,
-					gamepad1.left_stick_x
-			);
-			drive.updatePoseEstimate();
-			Pose2d pose = drive.localizer.getPose();
-			double turnPower = headingController.getTurnPower(pose, -72, Common.alliance == Common.Alliance.Red ? 72 : -72);
-
-
-			drive.setDrivePowers(new PoseVelocity2d(
-					Common.rotate(linearMotion, -drive.localizer.getPose().heading.toDouble()),
-					autoAlign? turnPower: -gamepad1.right_stick_x
-			));
-
-			shooter.maintainVelocity(0);
-			telemetry.addData("Shooter Velocity", shooter.getVelocity());
-			double yaw = pose.heading.log();
-
-			ll.updateRobotOrientation(yaw);
-			if (!localized) {
-				ll.localizeRobotMT1().ifPresent(drive.localizer::setPose);
+			handleShooterInput();
+			driveRobot();
+		}
+		ll.stop();
+	}
+	private void handleShooterInput() {
+		if (gamepad1.right_bumper) {
+			if (gamepad1.rightBumperWasPressed()) {
+				shooter.outtakeBalls(); // for a short time, then intake after
+			} else {
+				shooter.intakeBalls();
 			}
 
-			sendPoseToDash(pose);
 		}
+		if (gamepad1.right_trigger > 0.5) {
+			shooter.feedBalls();
+		} else {
+			shooter.stopFeeding();
+		}
+	}
+
+	private void driveRobot() {
+		telemetry.addData("Auto Align", autoAlign);
+		Vector2d linearMotion = new Vector2d(
+				gamepad1.left_stick_y,
+				gamepad1.left_stick_x
+		);
+		drive.updatePoseEstimate();
+		Pose2d pose = drive.localizer.getPose();
+		double turnPower = headingController.getTurnPower(pose, -72, Common.alliance == Common.Alliance.Red ? 72 : -72);
+
+		telemetry.addData("turn power", turnPower);
+		drive.setDrivePowers(new PoseVelocity2d(
+				Common.rotate(linearMotion, -drive.localizer.getPose().heading.toDouble()),
+				autoAlign? turnPower: -gamepad1.right_stick_x
+		));
+
+		shooter.maintainVelocity(0);
+		telemetry.addData("Shooter Velocity", shooter.getVelocity());
+		double yaw = pose.heading.log();
+
+		ll.updateRobotOrientation(yaw);
+		if (!localized) {
+			ll.localizeRobotMT1().ifPresent(drive.localizer::setPose);
+		}
+
+		sendPoseToDash(pose);
 	}
 
 	private void runInitLoop() {
