@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Pose2d;
@@ -8,23 +9,28 @@ import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
 
 import java.util.Optional;
+@Config
 @TeleOp
 public class SyborgsTeleop extends LinearOpMode {
+	public static volatile double targetVelocity = 1660;
 	LimeLightAprilTag ll;
 	HeadingController headingController = new HeadingController();
 	private boolean autoAlign = false;
 	MecanumDrive drive;
 	Shooter shooter;
 	boolean localized = false;
-	boolean leftTriggerToggle = false;
+	boolean lastLeftTrigger = false;
+	boolean shooterToggle = false;
+
 	@Override
 	public void runOpMode() {
 		telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 		drive = new MecanumDrive(hardwareMap, new Pose2d(0, 0, 0));
 		ll = new LimeLightAprilTag(hardwareMap, telemetry);
-		shooter = new Shooter(hardwareMap);
+		shooter = new Shooter(hardwareMap, telemetry);
 		while (opModeInInit()) {
 			runInitLoop();
 		}
@@ -43,16 +49,17 @@ public class SyborgsTeleop extends LinearOpMode {
 		}
 		ll.stop();
 	}
+
 	private void handleShooterInput() {
 		boolean firstShot = gamepad1.rightBumperWasPressed();
 		if (gamepad1.right_bumper) {
 			if (firstShot) {
-				shooter.outtakeBalls(); // for a short time, then intake after
-			} else {
-				shooter.intakeBalls();
+				shooter.startIntake(getRuntime());
 			}
-
+		} else {
+			shooter.stopIntaking();
 		}
+		shooter.runIntake(getRuntime());
 		if (gamepad1.right_trigger > 0.5) {
 			shooter.feedBalls();
 		} else {
@@ -61,12 +68,24 @@ public class SyborgsTeleop extends LinearOpMode {
 		if (gamepad1.left_bumper) {
 			shooter.outtakeBalls();
 		}
-
 		if (gamepad1.left_trigger > 0.5) {
-			leftTriggerToggle = !leftTriggerToggle;
+			if (!lastLeftTrigger) {
+				shooterToggle = !shooterToggle;
+				lastLeftTrigger = true;
+			}
+		} else {
+			lastLeftTrigger = false;
 		}
-		if (leftTriggerToggle) {
-			shooter.maintainVelocity(1400);
+		telemetry.addData("s", shooterToggle);
+		if (gamepad1.xWasPressed()) {
+			if (targetVelocity == 1800) {
+				targetVelocity = 1400;
+			} else if (targetVelocity == 1400) {
+				targetVelocity = 1800;
+			}
+		}
+		if (shooterToggle) {
+			shooter.maintainVelocity(targetVelocity);
 		} else {
 			shooter.maintainVelocity(0);
 		}
@@ -85,10 +104,9 @@ public class SyborgsTeleop extends LinearOpMode {
 		telemetry.addData("turn power", turnPower);
 		drive.setDrivePowers(new PoseVelocity2d(
 				Common.rotate(linearMotion, -drive.localizer.getPose().heading.toDouble()),
-				autoAlign? turnPower: -gamepad1.right_stick_x
+				autoAlign ? turnPower : -gamepad1.right_stick_x
 		));
 
-		shooter.maintainVelocity(0);
 		telemetry.addData("Shooter Velocity", shooter.getVelocity());
 		double yaw = pose.heading.log();
 
