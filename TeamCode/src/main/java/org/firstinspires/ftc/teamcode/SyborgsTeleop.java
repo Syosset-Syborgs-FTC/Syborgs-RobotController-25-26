@@ -76,7 +76,6 @@ public class SyborgsTeleop extends LinearOpMode {
 		} else {
 			lastLeftTrigger = false;
 		}
-		telemetry.addData("s", shooterToggle);
 		if (gamepad1.xWasPressed()) {
 			if (targetVelocity == 1800) {
 				targetVelocity = 1400;
@@ -107,7 +106,6 @@ public class SyborgsTeleop extends LinearOpMode {
 				autoAlign ? turnPower : -gamepad1.right_stick_x
 		));
 
-		telemetry.addData("Shooter Velocity", shooter.getVelocity());
 		double yaw = pose.heading.log();
 
 		ll.updateRobotOrientation(yaw);
