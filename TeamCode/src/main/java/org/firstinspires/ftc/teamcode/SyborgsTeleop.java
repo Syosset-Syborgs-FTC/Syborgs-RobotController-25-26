@@ -15,7 +15,7 @@ import java.util.Optional;
 @Config
 @TeleOp
 public class SyborgsTeleop extends LinearOpMode {
-	public static volatile double targetVelocity = 1660;
+	public static volatile double targetVelocity = 1400;
 	LimeLightAprilTag ll;
 	HeadingController headingController = new HeadingController();
 	private boolean autoAlign = false;
@@ -23,12 +23,18 @@ public class SyborgsTeleop extends LinearOpMode {
 	Shooter shooter;
 	boolean localized = false;
 	boolean lastLeftTrigger = false;
-	boolean shooterToggle = false;
 
+	boolean lastRightTrigger = false;
+	boolean shooterToggle = false;
+	double headingOffset = 0;
+	boolean slowDrive = false;
+	int cycleState = 0; // 0 = off, 1 = intake, 2 = outtake
+	boolean feedToggle = false;
+	boolean
 	@Override
 	public void runOpMode() {
 		telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
-		drive = new MecanumDrive(hardwareMap, new Pose2d(0, 0, 0));
+		drive = new MecanumDrive(hardwareMap, new Pose2d(0, 0, Math.toRadians(180)));
 		ll = new LimeLightAprilTag(hardwareMap, telemetry);
 		shooter = new Shooter(hardwareMap, telemetry);
 		while (opModeInInit()) {
@@ -49,24 +55,43 @@ public class SyborgsTeleop extends LinearOpMode {
 		}
 		ll.stop();
 	}
-
 	private void handleShooterInput() {
-		boolean firstShot = gamepad1.rightBumperWasPressed();
-		if (gamepad1.right_bumper) {
-			if (firstShot) {
-				shooter.startIntake(getRuntime());
+		if (gamepad1.rightBumperWasPressed()) {
+			shooter.startIntake(getRuntime());
+			if (cycleState == 1) {
+				cycleState = 0;
+			} else {
+				cycleState = 1;
 			}
-		} else {
+		}
+		if (gamepad1.leftBumperWasPressed()) {
+			if (cycleState == 2) {
+				cycleState = 0;
+			} else {
+				cycleState = 2;
+			}
+		}
+		if (cycleState == 1) {
+			shooter.runIntake(getRuntime());
+		}
+		if (cycleState == 2) {
+			shooter.outtakeBalls();
+		}
+		if (cycleState == 0) {
 			shooter.stopIntaking();
 		}
-		shooter.runIntake(getRuntime());
 		if (gamepad1.right_trigger > 0.5) {
+			if (!lastRightTrigger) {
+				lastRightTrigger = true;
+				feedToggle = !feedToggle;
+			}
+		} else {
+			lastRightTrigger = false;
+		}
+		if (feedToggle) {
 			shooter.feedBalls();
 		} else {
 			shooter.stopFeeding();
-		}
-		if (gamepad1.left_bumper) {
-			shooter.outtakeBalls();
 		}
 		if (gamepad1.left_trigger > 0.5) {
 			if (!lastLeftTrigger) {
@@ -76,43 +101,51 @@ public class SyborgsTeleop extends LinearOpMode {
 		} else {
 			lastLeftTrigger = false;
 		}
-		if (gamepad1.xWasPressed()) {
-			if (targetVelocity == 1800) {
-				targetVelocity = 1400;
-			} else if (targetVelocity == 1400) {
-				targetVelocity = 1800;
-			}
-		}
 		if (shooterToggle) {
-			shooter.maintainVelocity(targetVelocity);
+			shooter.maintainVelocity(targetVelocity, autoAlign);
 		} else {
-			shooter.maintainVelocity(0);
+			shooter.maintainVelocity(0, autoAlign);
+		}
+		if (gamepad1.dpad_up) {
+			targetVelocity = 1800;
+		}
+		if (gamepad1.dpad_down) {
+			targetVelocity = 1400;
 		}
 	}
 
 	private void driveRobot() {
 		telemetry.addData("Auto Align", autoAlign);
+		if (gamepad1.aWasPressed()) {
+			slowDrive = !slowDrive;
+		}
 		Vector2d linearMotion = new Vector2d(
 				gamepad1.left_stick_y,
 				gamepad1.left_stick_x
 		);
+		if (slowDrive) {
+			linearMotion = linearMotion.times(0.4);
+		}
 		drive.updatePoseEstimate();
 		Pose2d pose = drive.localizer.getPose();
 		double turnPower = headingController.getTurnPower(pose, -72, Common.alliance == Common.Alliance.Red ? 72 : -72);
 
 		telemetry.addData("turn power", turnPower);
 		drive.setDrivePowers(new PoseVelocity2d(
-				Common.rotate(linearMotion, -drive.localizer.getPose().heading.toDouble()),
+				Common.rotate(Common.rotate(linearMotion, -drive.localizer.getPose().heading.toDouble()), headingOffset),
 				autoAlign ? turnPower : -gamepad1.right_stick_x
 		));
 
 		double yaw = pose.heading.log();
-
+		if (gamepad1.startWasPressed()) {
+			headingOffset = drive.localizer.getPose().heading.log();
+		}
 		ll.updateRobotOrientation(yaw);
 		if (!localized) {
+			double tmp = drive.localizer.getPose().heading.log();
 			ll.localizeRobotMT1().ifPresent(drive.localizer::setPose);
+			headingOffset = drive.localizer.getPose().heading.log() - tmp;
 		}
-
 		sendPoseToDash(pose);
 	}
 
@@ -125,7 +158,9 @@ public class SyborgsTeleop extends LinearOpMode {
 			Drawing.drawRobot(packet.fieldOverlay(), pose.get());
 			FtcDashboard.getInstance().sendTelemetryPacket(packet);
 
+			double tmp = drive.localizer.getPose().heading.log();
 			drive.localizer.setPose(pose.get());
+			headingOffset = drive.localizer.getPose().heading.log() - tmp;
 			localized = true;
 		} else {
 			telemetry.addData("Pose", "AprilTags not available");
@@ -135,6 +170,7 @@ public class SyborgsTeleop extends LinearOpMode {
 			Common.alliance = Common.alliance.getOpposite();
 		}
 		telemetry.update();
+
 	}
 
 	private void sendPoseToDash(Pose2d pose) {

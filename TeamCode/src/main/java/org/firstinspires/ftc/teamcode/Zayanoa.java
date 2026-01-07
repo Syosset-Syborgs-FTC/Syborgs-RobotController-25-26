@@ -104,7 +104,7 @@ public class Zayanoa extends LinearOpMode {
 
 		// --- LIMELIGHT SETUP ---
 		try {
-			limelight = hardwareMap.get(Limelight3A.class, "Limelight3A");
+			limelight = hardwareMap.get(Limelight3A.class, "LimeLight3a");
 			limelight.pipelineSwitch(0);
 			limelight.start();
 		} catch (Exception e) {
