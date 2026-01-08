@@ -52,8 +52,10 @@ public class Shooter {
 		}
 		telemetry.addData("flywheel current", flywheel.getCurrent(CurrentUnit.AMPS));
 		telemetry.addData("flywheel power", power);
-		if (Math.abs(targetVelocity - currentVelocity) > 100) {
-			rgbLight.setPosition(0.278); // red
+		if (targetVelocity == 0) {
+			rgbLight.setPosition(0.28); // red
+		} else if (Math.abs(targetVelocity - currentVelocity) > 100) {
+			rgbLight.setPosition(0.28); // red
 		} else if (currentVelocity < targetVelocity - 20) {
 			rgbLight.setPosition(0.611); // blue
 		} else if (currentVelocity > targetVelocity + 20){
@@ -75,10 +77,6 @@ public class Shooter {
 		transfer.setPower(1);
 		cycle.setPower(1);
 	}
-	public void stopFeeding() {
-		transfer.setPower(0);
-		cycle.setPower(0);
-	}
 	double intakeStartTime;
 	boolean intaking = false;
 	public void startIntake(double rt) {
@@ -98,8 +96,13 @@ public class Shooter {
 		}
 		transfer.setPower(1);
 	}
+	public void stopFeeding() {
+		transfer.setPower(0);
+		cycle.setPower(0);
+	}
 	public void stopIntaking() {
 		intaking = false;
+		intake.setPower(0);
 	}
 
 	public void outtakeBalls() {
