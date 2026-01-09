@@ -38,9 +38,8 @@ repositories {
     maven {
         url = 'https://maven.brott.dev/'
     }
-}
+    mavenCentral()
 
-repositories {
     // Dairy releases repository
     maven {
         url = "https://repo.dairy.foundation/releases"
@@ -63,4 +62,5 @@ dependencies {
         exclude group: "com.acmerobotics.dashboard"
     }
     implementation("com.acmerobotics.slothboard:dashboard:0.2.4+0.5.1")
+    implementation("org.ejml:ejml-simple:0.44.0")
 }

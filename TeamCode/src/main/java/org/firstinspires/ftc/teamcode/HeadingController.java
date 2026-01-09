@@ -5,8 +5,8 @@ import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Pose2d;
 @Config
 public class HeadingController {
-	public static volatile double kP = 0.2;
-	public static volatile double kI = 0.01;
+	public static volatile double kP = 0.4;
+	public static volatile double kI = 0.03;
 	public static volatile double kD = 0.02;
 
 	private final PIDFController headingPID;

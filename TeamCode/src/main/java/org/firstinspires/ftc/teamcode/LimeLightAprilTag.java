@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
+import android.util.Pair;
+
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Pose2d;
@@ -31,7 +33,7 @@ public class LimeLightAprilTag {
 		forwarder.start();
 
 		telemetry.addLine("Forwarding 172.29.0.1:5801 -> 0.0.0.0:5801");
-		limelight.setPollRateHz(100);
+		limelight.setPollRateHz(250);
 		limelight.start();
 	}
 
@@ -39,19 +41,19 @@ public class LimeLightAprilTag {
 		limelight.updateRobotOrientation(Math.toDegrees(yaw));
 	}
 
-	public Optional<Pose2d> localizeRobotMT2() {
+	public Optional<Pair<Pose2d, Long>> localizeRobotMT2() {
 		LLResult result = limelight.getLatestResult();
 		if (result != null && result.isValid()) {
-			return Optional.of(flattenPose3DTo2d(result.getBotpose_MT2()));
+			return Optional.of(Pair.create(flattenPose3DTo2d(result.getBotpose_MT2()), result.getControlHubTimeStampNanos()));
 		}
 		return Optional.empty();
 	}
 
-	public Optional<Pose2d> localizeRobotMT1() {
+	public Optional<Pair<Pose2d, Long>> localizeRobotMT1() {
 		LLResult result = limelight.getLatestResult();
 		if (result != null && result.isValid()) {
 			Pose3D pose = result.getBotpose();
-			return Optional.of(flattenPose3DTo2d(pose));
+			return Optional.of(Pair.create(flattenPose3DTo2d(pose), result.getControlHubTimeStampNanos()));
 		}
 		return Optional.empty();
 	}

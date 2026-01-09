@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
+import android.util.Pair;
+
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -9,9 +11,9 @@ import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.VoltageSensor;
 
 import java.util.Optional;
+
 @Config
 @TeleOp
 public class SyborgsTeleop extends LinearOpMode {
@@ -30,12 +32,16 @@ public class SyborgsTeleop extends LinearOpMode {
 	boolean slowDrive = false;
 	int cycleState = 0; // 0 = off, 1 = intake, 2 = outtake
 	boolean feedToggle = false;
+	PoseFilter poseFilter;
+
+
 	@Override
 	public void runOpMode() {
 		telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 		drive = new MecanumDrive(hardwareMap, new Pose2d(0, 0, Math.toRadians(180)));
 		ll = new LimeLightAprilTag(hardwareMap, telemetry);
 		shooter = new Shooter(hardwareMap, telemetry);
+		poseFilter = new PoseFilter();
 		while (opModeInInit()) {
 			runInitLoop();
 		}
@@ -43,18 +49,18 @@ public class SyborgsTeleop extends LinearOpMode {
 		waitForStart();
 
 		while (opModeIsActive()) {
-			if (gamepad1.yWasPressed()) {
-				autoAlign = !autoAlign;
-				if (autoAlign) {
-					headingController.reset();
-				}
-			}
 			handleShooterInput();
 			driveRobot();
 		}
 		ll.stop();
 	}
 	private void handleShooterInput() {
+		if (gamepad1.yWasPressed()) {
+			autoAlign = !autoAlign;
+			if (autoAlign) {
+				headingController.reset();
+			}
+		}
 		if (gamepad1.rightBumperWasPressed()) {
 			shooter.startIntake(getRuntime());
 			if (cycleState == 1) {
@@ -131,44 +137,46 @@ public class SyborgsTeleop extends LinearOpMode {
 			manualRotation *= 0.4;
 		}
 		drive.updatePoseEstimate();
-		Pose2d pose = drive.localizer.getPose();
+		long currentTime = System.nanoTime();
+		Pose2d pose = poseFilter.update(drive.localizer.getPose(), currentTime);
+		double yaw = pose.heading.log();
+		ll.updateRobotOrientation(yaw);
+		updateVision();
+
 		double turnPower = headingController.getTurnPower(pose, -72, Common.alliance == Common.Alliance.Red ? 72 : -72);
 		telemetry.addData("turn power", turnPower);
 		drive.setDrivePowers(new PoseVelocity2d(
-				Common.rotate(Common.rotate(linearMotion, -drive.localizer.getPose().heading.toDouble()), headingOffset),
+				Common.rotate(Common.rotate(linearMotion, -pose.heading.toDouble()), headingOffset),
 				autoAlign ? turnPower : manualRotation
 		));
 
-		double yaw = pose.heading.log();
 		if (gamepad1.xWasPressed()) {
-			headingOffset = drive.localizer.getPose().heading.log() + Math.toRadians(180);
+			headingOffset = pose.heading.log() + Math.toRadians(180);
 		}
-		telemetry.addData("headingoffset", headingOffset);
-		ll.updateRobotOrientation(yaw);
-		if (false) {
-			double tmp = drive.localizer.getPose().heading.log();
-			Optional<Pose2d> p = ll.localizeRobotMT1();
-			if (p.isPresent()) {
-				drive.localizer.setPose(p.get());
-				headingOffset = drive.localizer.getPose().heading.log() - tmp;
-
-			}
-		}
+		telemetry.addData("heading offset", headingOffset);
 		sendPoseToDash(pose);
 	}
 
+	private void updateVision() {
+		double oldHeading = poseFilter.getCurrentPose().heading.log();
+		Optional<Pair<Pose2d, Long>> p = ll.localizeRobotMT1();
+		if (p.isPresent()) {
+			poseFilter.updateVision(p.get().first, p.get().second);
+			headingOffset += poseFilter.getCurrentPose().heading.log() - oldHeading;
+		}
+	}
+
 	private void runInitLoop() {
-		Optional<Pose2d> pose = ll.localizeRobotMT1();
+		Optional<Pair<Pose2d, Long>> pose = ll.localizeRobotMT1();
 		if (pose.isPresent()) {
+			Pose2d p = pose.get().first;
 			TelemetryPacket packet = new TelemetryPacket();
 
 			packet.fieldOverlay().setStroke("#4CAF50"); // green for mt1 pose
-			Drawing.drawRobot(packet.fieldOverlay(), pose.get());
+			Drawing.drawRobot(packet.fieldOverlay(), p);
 			FtcDashboard.getInstance().sendTelemetryPacket(packet);
 
-			double tmp = drive.localizer.getPose().heading.log();
-			drive.localizer.setPose(pose.get());
-			headingOffset = drive.localizer.getPose().heading.log() - tmp;
+			drive.localizer.setPose(p);
 		} else {
 			telemetry.addData("Pose", "AprilTags not available");
 		}
@@ -181,8 +189,8 @@ public class SyborgsTeleop extends LinearOpMode {
 	}
 
 	private void sendPoseToDash(Pose2d pose) {
-		Optional<Pose2d> mt1Pose = ll.localizeRobotMT1();
-		Optional<Pose2d> mt2Pose = ll.localizeRobotMT2();
+		Optional<Pair<Pose2d, Long>> mt1Pose = ll.localizeRobotMT1();
+		Optional<Pair<Pose2d, Long>> mt2Pose = ll.localizeRobotMT2();
 
 		telemetry.update();
 		telemetry.addData("Obelisk ID", ll.getObeliskID(pose).map(x -> {
@@ -200,10 +208,10 @@ public class SyborgsTeleop extends LinearOpMode {
 
 		TelemetryPacket packet = new TelemetryPacket();
 		packet.fieldOverlay().setStroke("#4CAF50"); // green for mt1 pose
-		mt1Pose.ifPresent(p -> Drawing.drawRobot(packet.fieldOverlay(), p));
+		mt1Pose.ifPresent(p -> Drawing.drawRobot(packet.fieldOverlay(), p.first));
 
 		packet.fieldOverlay().setStroke("#FF5722"); // red for mt2 pose
-		mt2Pose.ifPresent(p -> Drawing.drawRobot(packet.fieldOverlay(), p));
+		mt2Pose.ifPresent(p -> Drawing.drawRobot(packet.fieldOverlay(), p.first));
 
 		packet.fieldOverlay().setStroke("#3F51B5"); // blue for pinpoint pose
 		Drawing.drawRobot(packet.fieldOverlay(), pose);
