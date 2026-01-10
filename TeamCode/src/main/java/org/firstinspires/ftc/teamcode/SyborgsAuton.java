@@ -140,13 +140,13 @@ public class SyborgsAuton extends LinearOpMode {
 		} else {
 			telemetry.addData("Pose", "AprilTags not available");
 		}
+		telemetry.addData("Alliance (press right bumper to change): ", Common.alliance.toString());
 		if (Common.alliance == Common.Alliance.Blue && lastPoseInit.position.y > 0) {
 			telemetry.addLine("Warning: Alliance set to Blue, but robot on Red side!");
 		}
 		if (Common.alliance == Common.Alliance.Red && lastPoseInit.position.y < 0) {
 			telemetry.addLine("Warning: Alliance set to Red, but robot is on Blue side!");
 		}
-		telemetry.addData("Alliance (press right bumper to change): ", Common.alliance.toString());
 		if (gamepad1.rightBumperWasPressed()) {
 			Common.alliance = Common.alliance.getOpposite();
 		}
