@@ -8,6 +8,7 @@ import com.noahbres.meepmeep.roadrunner.entity.RoadRunnerBotEntity;
 
 public class MeepMeepTesting {
 	public static void main(String[] args) {
+		System.setProperty("sun.java2d.opengl", "true");
 		MeepMeep meepMeep = new MeepMeep(800);
 
 		RoadRunnerBotEntity myBot = new DefaultBotBuilder(meepMeep)
@@ -18,17 +19,14 @@ public class MeepMeepTesting {
 		myBot.runAction(myBot.getDrive().actionBuilder(new Pose2d(60, 12, Math.toRadians(180)))
 
 				.splineToLinearHeading(new Pose2d(-10, 10, Math.toRadians(130)), Math.toRadians(135))
-				.splineTo(new Vector2d(36, 36), Math.toRadians(90))
+				.strafeToLinearHeading(new Vector2d(36, 36), Math.toRadians(90))
 				.setReversed(true)
 				.splineToLinearHeading(new Pose2d(-10, 10, Math.toRadians(130)), Math.toRadians(135))
-				.setReversed(true)
-				.splineToLinearHeading(new Pose2d(12, 36, Math.toRadians(90)), Math.toRadians(90))
-				.setReversed(true)
+				.strafeToSplineHeading(new Vector2d(12, 36), Math.toRadians(90))
 				.splineToLinearHeading(new Pose2d(-10, 10, Math.toRadians(130)), Math.toRadians(135))
-				.setReversed(true)
 				.splineToLinearHeading(new Pose2d(-12, 36, Math.toRadians(90)), Math.toRadians(90))
 				.setReversed(true)
-				.splineToLinearHeading(new Pose2d(-10, 10, Math.toRadians(130)), Math.toRadians(135))
+				.splineToLinearHeading(new Pose2d(-10, 10, Math.toRadians(130)), Math.toRadians(130))
 				.build());
 
 		meepMeep.setBackground(MeepMeep.Background.FIELD_DECODE_OFFICIAL)
