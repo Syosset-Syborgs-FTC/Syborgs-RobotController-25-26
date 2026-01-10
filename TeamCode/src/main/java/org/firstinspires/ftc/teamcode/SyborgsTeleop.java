@@ -54,6 +54,7 @@ public class SyborgsTeleop extends LinearOpMode {
 		}
 		ll.stop();
 	}
+
 	private void handleShooterInput() {
 		if (gamepad1.yWasPressed()) {
 			autoAlign = !autoAlign;
@@ -218,6 +219,4 @@ public class SyborgsTeleop extends LinearOpMode {
 
 		FtcDashboard.getInstance().sendTelemetryPacket(packet);
 	}
-
-
 }
