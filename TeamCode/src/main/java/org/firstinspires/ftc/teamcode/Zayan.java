@@ -15,7 +15,7 @@ import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
-@TeleOp(name = "Zayano TeleOp Final", group = "Linear OpMode")
+@TeleOp(name = "Zayan TeleOp Final", group = "Linear OpMode")
 public class Zayan extends LinearOpMode {
 
 	// --- TUNING VARIABLES ---
