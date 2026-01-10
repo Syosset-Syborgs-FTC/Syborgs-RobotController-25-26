@@ -1,10 +1,11 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.roadrunner.Action;
+import com.acmerobotics.roadrunner.InstantAction;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
@@ -77,6 +78,12 @@ public class Shooter {
 		transfer.setPower(1);
 		cycle.setPower(1);
 	}
+	public Action feedBallsAction() {
+		return new InstantAction(this::feedBalls);
+	}
+	public Action stopFeedingAction() {
+		return new InstantAction(this::stopFeeding);
+	}
 	double intakeStartTime;
 	boolean intaking = false;
 	public void startIntake(double rt) {
@@ -100,9 +107,12 @@ public class Shooter {
 		transfer.setPower(0);
 		cycle.setPower(0);
 	}
-	public void stopIntaking() {
+	public void stopIntake() {
 		intaking = false;
 		intake.setPower(0);
+	}
+	public Action stopIntakeAction() {
+		return new InstantAction(this::stopIntake);
 	}
 
 	public void outtakeBalls() {

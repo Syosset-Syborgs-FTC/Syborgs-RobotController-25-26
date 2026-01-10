@@ -85,7 +85,7 @@ public class SyborgsTeleop extends LinearOpMode {
 			}
 		}
 		if (cycleState == 0) {
-			shooter.stopIntaking();
+			shooter.stopIntake();
 		}
 		if (cycleState == 1) {
 			shooter.runIntake(getRuntime());

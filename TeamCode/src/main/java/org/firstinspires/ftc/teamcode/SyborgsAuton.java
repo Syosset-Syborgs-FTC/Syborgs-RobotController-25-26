@@ -5,14 +5,20 @@ import android.util.Pair;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.acmerobotics.roadrunner.Action;
+import com.acmerobotics.roadrunner.InstantAction;
 import com.acmerobotics.roadrunner.Pose2d;
-import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
+import com.acmerobotics.roadrunner.RaceAction;
+import com.acmerobotics.roadrunner.SequentialAction;
+import com.acmerobotics.roadrunner.SleepAction;
+import com.acmerobotics.roadrunner.Trajectory;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 
 @Autonomous
 public class SyborgsAuton extends LinearOpMode {
@@ -21,6 +27,14 @@ public class SyborgsAuton extends LinearOpMode {
 	LimeLightAprilTag ll;
 	Shooter shooter;
 	PoseFilter poseFilter;
+	double shootingTime = 3;
+	Supplier<Action> shootAction = () -> new SequentialAction(shooter.feedBallsAction(), new SleepAction(shootingTime), shooter.stopFeedingAction());
+	Supplier<Action> startIntakeAction = () -> new InstantAction(() -> {
+		shooter.startIntake(getRuntime());
+	});
+	Pose2d lastPoseInit = new Pose2d(0, 0, Math.toRadians(180));
+	int obeliskID = -1;
+
 	@Override
 	public void runOpMode() throws InterruptedException {
 		telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -32,27 +46,91 @@ public class SyborgsAuton extends LinearOpMode {
 			runInitLoop();
 		}
 		waitForStart();
-		TrajectoryActionBuilder tab1 = drive.actionBuilder(drive.localizer.getPose())
-				.splineToLinearHeading(new Pose2d(-10, 10, Math.toRadians(130)), Math.toRadians(135))
-				.splineTo(new Vector2d(36, 36), Math.toRadians(90))
-				.setReversed(true)
-				.splineToLinearHeading(new Pose2d(-10, 10, Math.toRadians(130)), Math.toRadians(135))
-				.splineToLinearHeading(new Pose2d(12, 36, Math.toRadians(90)), Math.toRadians(90))
-				.splineToLinearHeading(new Pose2d(-10, 10, Math.toRadians(130)), Math.toRadians(135))
-				.splineToLinearHeading(new Pose2d(-12, 36, Math.toRadians(90)), Math.toRadians(90))
-				.setReversed(true)
-				.splineToLinearHeading(new Pose2d(-10, 10, Math.toRadians(130)), Math.toRadians(135));
-		Actions.runBlocking(tab1.build());
+
+		// ensure that the correct cycle is never shot last and overflows
+		Action autonAction = new SequentialAction(runPreloaded(), runCycleGPP(), runCyclePGP(), runCyclePPG());
+		if (obeliskID == 22) {
+			autonAction = new SequentialAction(runPreloaded(), runCyclePGP(), runCycleGPP(), runCyclePPG());
+		} else if (obeliskID == 23) {
+			autonAction = new SequentialAction(runPreloaded(), runCyclePPG(), runCycleGPP(), runCyclePGP());
+		}
+		Actions.runBlocking(new RaceAction(t -> {
+			shooter.runIntake(getRuntime());
+			shooter.maintainVelocity(1350, true);
+			return true;
+		}, autonAction));
+
 
 	}
+
+	public Action runPreloaded() {
+		return drive.actionBuilder(drive.localizer.getPose())
+				// shoot preloaded
+				.strafeToLinearHeading(new Vector2d(-10, 10), Math.toRadians(130))
+				.stopAndAdd(shootAction.get())
+				.build();
+	}
+
+	public Action runCycleGPP() {
+		return drive.actionBuilder(drive.localizer.getPose())
+				// first cycle
+				.strafeToLinearHeading(new Vector2d(20, 26), Math.toRadians(105))
+				.afterDisp(10, startIntakeAction.get())
+				.splineToSplineHeading(new Pose2d(32, 48, Math.toRadians(90)), Math.toRadians(90))
+				.afterDisp(10, shooter.stopIntakeAction())
+				.strafeToLinearHeading(new Vector2d(-10, 10), Math.toRadians(130))
+				.stopAndAdd(shootAction.get())
+				.build();
+	}
+
+	public Action runCyclePGP() {
+		return drive.actionBuilder(drive.localizer.getPose())
+				// second cycle
+				.strafeToSplineHeading(new Vector2d(0, 20), Math.toRadians(105))
+				.afterDisp(10, startIntakeAction.get())
+				.splineToLinearHeading(new Pose2d(10, 48, Math.toRadians(90)), Math.toRadians(90))
+				.afterDisp(10, shooter.stopIntakeAction())
+				.strafeToLinearHeading(new Vector2d(-10, 10), Math.toRadians(130))
+				.stopAndAdd(shootAction.get())
+				.build();
+	}
+
+	public Action runCyclePPG() {
+		return drive.actionBuilder(drive.localizer.getPose())
+				// third cycle
+				.strafeToSplineHeading(new Vector2d(-12, 24), Math.toRadians(115))
+				.afterDisp(10, startIntakeAction.get())
+				.splineToLinearHeading(new Pose2d(-12, 48, Math.toRadians(90)), Math.toRadians(90))
+				.afterDisp(10, shooter.stopIntakeAction())
+				.setReversed(true)
+				.strafeToLinearHeading(new Vector2d(-10, 10), Math.toRadians(130))
+				.stopAndAdd(shootAction.get())
+				.build();
+	}
+
 	public void runInitLoop() {
+		lastPoseInit = poseFilter.update(drive.localizer.getPose(), System.nanoTime());
+		telemetry.addData("Obelisk ID", ll.getObeliskID(poseFilter.getCurrentPose()).map(x -> {
+			obeliskID = x;
+			switch (x) {
+				case 21:
+					return "GPP";
+				case 22:
+					return "PGP";
+				case 23:
+					return "PPG";
+				default:
+					return x.toString();
+			}
+		}).orElse("No obelisk apriltag visible"));
+
+		ll.updateRobotOrientation(Math.toDegrees(drive.localizer.getPose().heading.log()));
 		Optional<Pair<Pose2d, Long>> pose = ll.localizeRobotMT1();
 		if (pose.isPresent()) {
 			Pose2d p = pose.get().first;
 			TelemetryPacket packet = new TelemetryPacket();
 			poseFilter.updateVision(p, pose.get().second);
-
-			packet.fieldOverlay().setStroke("#4CAF50"); // green for mt1 pose
+			packet.fieldOverlay().setStroke("#4CAF50");
 			Drawing.drawRobot(packet.fieldOverlay(), p);
 			FtcDashboard.getInstance().sendTelemetryPacket(packet);
 
@@ -65,6 +143,5 @@ public class SyborgsAuton extends LinearOpMode {
 			Common.alliance = Common.alliance.getOpposite();
 		}
 		telemetry.update();
-
 	}
 }

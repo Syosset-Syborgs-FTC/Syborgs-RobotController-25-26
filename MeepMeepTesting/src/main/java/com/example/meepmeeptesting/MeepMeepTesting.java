@@ -28,12 +28,12 @@ public class MeepMeepTesting {
 				.strafeToLinearHeading(new Vector2d(20, 26), Math.toRadians(105))
 				.splineToSplineHeading(new Pose2d(32, 48, Math.toRadians(90)), Math.toRadians(90))
 				.strafeToLinearHeading(new Vector2d(-10, 10), Math.toRadians(130))
-				.stopAndAdd(new SleepAction(0.5))
+				.stopAndAdd(new SleepAction(shootingTime))
 
 				.strafeToSplineHeading(new Vector2d(0, 20), Math.toRadians(105))
 				.splineToLinearHeading(new Pose2d(10, 48, Math.toRadians(90)), Math.toRadians(90))
 				.strafeToLinearHeading(new Vector2d(-10, 10), Math.toRadians(130))
-				.stopAndAdd(new SleepAction(0.5))
+				.stopAndAdd(new SleepAction(shootingTime))
 
 				.strafeToSplineHeading(new Vector2d(-12, 24), Math.toRadians(115))
 				.splineToLinearHeading(new Pose2d(-12, 48, Math.toRadians(90)), Math.toRadians(90))

@@ -13,7 +13,6 @@ public class PoseFilter {
 	private final NavigableMap<Long, Pose2d> odomHistory = new TreeMap<>();
 	private Pose2d offset = new Pose2d(0, 0, 0);
 
-
 	private final double LOCATION_CONVERGENCE_RATE = 0.1;
 	private final double HEADING_CONVERGENCE_RATE = 0.05;
 
@@ -23,7 +22,11 @@ public class PoseFilter {
 	private final int OUTLIER_COUNT = 10;
 	private int suspiciousReadingCounter = 0;
 	private final long HISTORY_RETENTION_MS = 1000;
+
+	private boolean isVisionInitialized = false;
+
 	private Pose2d currentPose = new Pose2d(0,0,Math.toRadians(180));
+
 	public Pose2d getCurrentPose() {
 		return currentPose;
 	}
@@ -36,9 +39,24 @@ public class PoseFilter {
 		this.currentPose = offset.times(rawPinpointPose);
 		return currentPose;
 	}
+
 	public void updateVision(Pose2d visionPose, long timestampNs) {
 		Pose2d rawPoseAtTime = getInterpolatedHistory(timestampNs);
-		if (rawPoseAtTime == null) return;
+		 // assume (0,0,0) if no data to allow initialization of vision offset
+		if (rawPoseAtTime == null) {
+			rawPoseAtTime = new Pose2d(0, 0, 0);
+		}
+
+		if (!isVisionInitialized) {
+			this.offset = visionPose.times(rawPoseAtTime.inverse());
+
+			this.currentPose = visionPose;
+
+			this.isVisionInitialized = true;
+			this.suspiciousReadingCounter = 0;
+			return;
+		}
+
 
 		Pose2d estimatedPoseAtTime = offset.times(rawPoseAtTime);
 
@@ -53,7 +71,6 @@ public class PoseFilter {
 			if (suspiciousReadingCounter > OUTLIER_COUNT) {
 				// reading has been off for a long time, accept it
 				this.offset = visionPose.times(rawPoseAtTime.inverse());
-
 				suspiciousReadingCounter = 0;
 			}
 		} else {
@@ -63,6 +80,7 @@ public class PoseFilter {
 			this.offset = calculateSmoothedOffset(this.offset, targetOffset);
 		}
 	}
+
 	private Pose2d calculateSmoothedOffset(Pose2d current, Pose2d target) {
 		// low pass filter
 		Vector2d newPos = current.position.plus(
@@ -77,7 +95,6 @@ public class PoseFilter {
 	}
 
 	private Pose2d getInterpolatedHistory(long timestampNs) {
-		// interpolate historical pose
 		Map.Entry<Long, Pose2d> floor = odomHistory.floorEntry(timestampNs);
 		Map.Entry<Long, Pose2d> ceiling = odomHistory.ceilingEntry(timestampNs);
 
@@ -94,5 +111,6 @@ public class PoseFilter {
 		offset = new Pose2d(0,0,0);
 		suspiciousReadingCounter = 0;
 		odomHistory.clear();
+		isVisionInitialized = false;
 	}
 }
