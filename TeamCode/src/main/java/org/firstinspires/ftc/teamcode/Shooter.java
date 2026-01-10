@@ -45,14 +45,14 @@ public class Shooter {
 		flywheelController.setConstants(kP, kI, kD);
 		flywheelController.setTarget(targetVelocity);
 		double currentVelocity = flywheel.getVelocity();
-		telemetry.addData("flywheel", currentVelocity);
-		telemetry.addData("flywheel target", targetVelocity);
+		telemetry.addData("Flywheel", currentVelocity);
+		telemetry.addData("Flywheel Target", targetVelocity);
 		double power = flywheelController.update(currentVelocity, targetVelocity * kF / reading);
 		if (flywheel.isOverCurrent()) {
 			telemetry.addLine("Flywheel is over current!");
 		}
-		telemetry.addData("flywheel current", flywheel.getCurrent(CurrentUnit.AMPS));
-		telemetry.addData("flywheel power", power);
+		telemetry.addData("Flywheel Current", flywheel.getCurrent(CurrentUnit.AMPS));
+		telemetry.addData("Flywheel Power", power);
 		if (targetVelocity == 0) {
 			rgbLight.setPosition(0.28); // red
 		} else if (Math.abs(targetVelocity - currentVelocity) > 100) {

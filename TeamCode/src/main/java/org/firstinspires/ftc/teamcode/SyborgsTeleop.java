@@ -6,6 +6,7 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
@@ -33,7 +34,8 @@ public class SyborgsTeleop extends LinearOpMode {
 	int cycleState = 0; // 0 = off, 1 = intake, 2 = outtake
 	boolean feedToggle = false;
 	PoseFilter poseFilter;
-
+	boolean autoPark = false;
+	Action parkAction;
 
 	@Override
 	public void runOpMode() {
@@ -70,7 +72,6 @@ public class SyborgsTeleop extends LinearOpMode {
 				cycleState = 1;
 			}
 		}
-		telemetry.addData("cycleState", cycleState);
 		if (gamepad1.leftBumperWasPressed()) {
 			if (cycleState == 2) {
 				cycleState = 0;
@@ -145,16 +146,29 @@ public class SyborgsTeleop extends LinearOpMode {
 		updateVision();
 
 		double turnPower = headingController.getTurnPower(pose, -72, Common.alliance == Common.Alliance.Red ? 72 : -72);
-		telemetry.addData("turn power", turnPower);
-		drive.setDrivePowers(new PoseVelocity2d(
+		telemetry.addData("Turn Power", turnPower);
+		if (!autoPark) drive.setDrivePowers(new PoseVelocity2d(
 				Common.rotate(Common.rotate(linearMotion, -pose.heading.toDouble()), headingOffset),
 				autoAlign ? turnPower : manualRotation
 		));
-
+		if (gamepad1.bWasPressed()) {
+			autoPark = !autoPark;
+			if (autoPark) {
+				parkAction = drive.actionBuilder(pose).strafeToLinearHeading(new Vector2d(36, Common.alliance == Common.Alliance.Red ? -32 : 32), Math.toRadians(180)).build();
+			}
+		}
+		if (autoPark) {
+			TelemetryPacket packet = new TelemetryPacket();
+			if (!parkAction.run(packet)) {
+				autoPark = false;
+			}
+			FtcDashboard.getInstance().sendTelemetryPacket(packet);
+		}
+		telemetry.addData("Auto Park", autoPark);
 		if (gamepad1.xWasPressed()) {
 			headingOffset = pose.heading.log() + Math.toRadians(180);
 		}
-		telemetry.addData("heading offset", headingOffset);
+		telemetry.addData("Heading Offset", headingOffset);
 		sendPoseToDash(pose);
 	}
 
