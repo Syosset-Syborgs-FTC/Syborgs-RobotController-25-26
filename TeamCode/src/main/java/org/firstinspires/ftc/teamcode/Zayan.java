@@ -16,7 +16,7 @@ import com.qualcomm.robotcore.util.Range;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
 @TeleOp(name = "Zayano TeleOp Final", group = "Linear OpMode")
-public class Zayanoa extends LinearOpMode {
+public class Zayan extends LinearOpMode {
 
 	// --- TUNING VARIABLES ---
 	private static final double DRIVE_SENSITIVITY_EXPONENT = 3.0;
