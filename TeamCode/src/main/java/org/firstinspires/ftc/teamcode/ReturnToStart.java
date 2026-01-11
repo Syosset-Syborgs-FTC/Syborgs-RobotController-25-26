@@ -33,7 +33,7 @@ public class ReturnToStart extends LinearOpMode {
 		}
 		waitForStart();
 		TrajectoryActionBuilder tab1 = drive.actionBuilder(drive.localizer.getPose())
-				.splineToLinearHeading(new Pose2d(60, 0, Math.toRadians(180)), Math.toRadians(180));
+				.strafeToLinearHeading(new Vector2d(60, 0), Math.toRadians(180));
 		Actions.runBlocking(tab1.build());
 
 	}
