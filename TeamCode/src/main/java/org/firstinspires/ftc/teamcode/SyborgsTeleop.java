@@ -90,7 +90,7 @@ public class SyborgsTeleop extends LinearOpMode {
 			shooter.stopIntake();
 		}
 		if (cycleState == 1) {
-			shooter.runIntake(getRuntime());
+			shooter.updateIntake(getRuntime());
 		}
 		if (cycleState == 2) {
 			shooter.outtakeBalls();

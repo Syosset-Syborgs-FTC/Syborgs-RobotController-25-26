@@ -90,7 +90,7 @@ public class Shooter {
 		intakeStartTime = rt;
 		intaking = true;
 	}
-	public void runIntake(double rt) {
+	public void updateIntake(double rt) {
 		if (!intaking) {
 			intake.setPower(0);
 			return;

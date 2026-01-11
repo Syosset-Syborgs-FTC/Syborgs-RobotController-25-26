@@ -61,7 +61,7 @@ public class SyborgsAuton extends LinearOpMode {
 			autonAction = new SequentialAction(runPreloaded(), runCyclePPG(), runCycleGPP(), runCyclePGP());
 		}
 		Actions.runBlocking(new RaceAction(t -> {
-			shooter.runIntake(getRuntime());
+			shooter.updateIntake(getRuntime());
 			shooter.maintainVelocity(1350, true);
 			return true;
 		}, autonAction));
