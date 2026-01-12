@@ -10,6 +10,7 @@ import com.noahbres.meepmeep.roadrunner.DefaultBotBuilder;
 import com.noahbres.meepmeep.roadrunner.DriveShim;
 import com.noahbres.meepmeep.roadrunner.entity.RoadRunnerBotEntity;
 
+import java.awt.Toolkit;
 import java.util.function.Supplier;
 
 public class MeepMeepTesting {
@@ -28,8 +29,6 @@ public class MeepMeepTesting {
 	public Shooter shooter = () -> new InstantAction(() -> {});
 
 	public static void main(String[] args) {
-		System.setProperty("sun.java2d.opengl", "true");
-
 		MeepMeep meepMeep = new MeepMeep(800);
 
 		RoadRunnerBotEntity myBot = new DefaultBotBuilder(meepMeep)

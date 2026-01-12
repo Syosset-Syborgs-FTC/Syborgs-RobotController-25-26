@@ -28,11 +28,11 @@ public class Shooter {
 	private PIDFController flywheelController;
 	VoltageSensor voltage;
 	public Shooter(HardwareMap hardwareMap, Telemetry telemetry) {
-		flywheel = (DcMotorEx) hardwareMap.dcMotor.get("shooter");
-		intake = hardwareMap.dcMotor.get("intake");
-		transfer = hardwareMap.crservo.get("turner");
-		cycle = hardwareMap.crservo.get("cycle");
-		rgbLight = hardwareMap.servo.get("rgB");
+		flywheel = (DcMotorEx) hardwareMap.dcMotor.get("st");
+		intake = hardwareMap.dcMotor.get("in");
+		transfer = hardwareMap.crservo.get("tn");
+		cycle = hardwareMap.crservo.get("ts");
+		rgbLight = hardwareMap.servo.get("rgb");
 		this.telemetry = telemetry;
 
 		voltage = hardwareMap.voltageSensor.get("Expansion Hub 2");
