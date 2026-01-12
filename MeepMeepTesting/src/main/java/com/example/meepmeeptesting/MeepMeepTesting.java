@@ -75,12 +75,12 @@ public class MeepMeepTesting {
 
 	public Action runCycleGPP() {
 		return drive.actionBuilder(new Pose2d(-10, 10, Math.toRadians(130)))
-				// first cycldrive.localizer.getPose(), poseMape
-				.strafeToLinearHeading(new Vector2d(20, 26), Math.toRadians(90))
-				.afterDisp(10, startIntakeAction.get())
+				// first cycle
+				.strafeToLinearHeading(new Vector2d(20, 26), Math.toRadians(105))
 				.splineToSplineHeading(new Pose2d(32, 48, Math.toRadians(90)), Math.toRadians(90))
-				.afterDisp(10, shooter.stopIntakeAction())
+				.afterDisp(10, startIntakeAction.get())
 				.strafeToLinearHeading(new Vector2d(-10, 10), Math.toRadians(130))
+				.afterDisp(10, shooter.stopIntakeAction())
 				.stopAndAdd(shootAction.get())
 				.build();
 	}
@@ -89,10 +89,10 @@ public class MeepMeepTesting {
 		return drive.actionBuilder(new Pose2d(-10, 10, Math.toRadians(130)))
 				// second cycle
 				.strafeToSplineHeading(new Vector2d(0, 20), Math.toRadians(105))
-				.afterDisp(10, startIntakeAction.get())
 				.splineToLinearHeading(new Pose2d(10, 48, Math.toRadians(90)), Math.toRadians(90))
-				.afterDisp(10, shooter.stopIntakeAction())
+				.afterDisp(10, startIntakeAction.get())
 				.strafeToLinearHeading(new Vector2d(-10, 10), Math.toRadians(130))
+				.afterDisp(10, shooter.stopIntakeAction())
 				.stopAndAdd(shootAction.get())
 				.build();
 	}
@@ -100,12 +100,12 @@ public class MeepMeepTesting {
 	public Action runCyclePPG() {
 		return drive.actionBuilder(new Pose2d(-10, 10, Math.toRadians(130)))
 				// third cycle
-				.strafeToSplineHeading(new Vector2d(-11, 24), Math.toRadians(115))
-				.afterDisp(10, startIntakeAction.get())
+				.strafeToSplineHeading(new Vector2d(-12, 24), Math.toRadians(115))
 				.splineToLinearHeading(new Pose2d(-12, 48, Math.toRadians(90)), Math.toRadians(90))
-				.afterDisp(10, shooter.stopIntakeAction())
+				.afterDisp(10, startIntakeAction.get())
 				.setReversed(true)
 				.strafeToLinearHeading(new Vector2d(-10, 10), Math.toRadians(130))
+				.afterDisp(10, shooter.stopIntakeAction())
 				.stopAndAdd(shootAction.get())
 				.build();
 	}
