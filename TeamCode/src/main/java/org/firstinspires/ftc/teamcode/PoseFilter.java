@@ -30,6 +30,9 @@ public class PoseFilter {
 	public Pose2d getCurrentPose() {
 		return currentPose;
 	}
+	public Pose2d getPoseNoUpdate(Pose2d rawPose) {
+		return offset.times(rawPose);
+	}
 
 	public Pose2d update(Pose2d rawPinpointPose, long timestampNs) {
 		odomHistory.put(timestampNs, rawPinpointPose);

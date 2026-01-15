@@ -9,7 +9,6 @@ import com.noahbres.meepmeep.MeepMeep;
 import com.noahbres.meepmeep.roadrunner.DefaultBotBuilder;
 import com.noahbres.meepmeep.roadrunner.DriveShim;
 import com.noahbres.meepmeep.roadrunner.entity.RoadRunnerBotEntity;
-
 import java.awt.Toolkit;
 import java.util.function.Supplier;
 
@@ -35,7 +34,7 @@ public class MeepMeepTesting {
 
 		RoadRunnerBotEntity myBot = new DefaultBotBuilder(meepMeep)
 				// Set bot constraints: maxVel, maxAccel, maxAngVel, maxAngAccel, track width
-				.setConstraints(50, 50, Math.toRadians(180), Math.toRadians(180), 14)
+				.setConstraints(125, 100, Math.toRadians(180), Math.toRadians(180), 14)
 				.build();
 
 
@@ -66,7 +65,6 @@ public class MeepMeepTesting {
 	}
 
 	public Action runPreloaded() {
-
 		return drive.actionBuilder(drive.getPoseEstimate())
 				// shoot preloaded
 				.strafeToLinearHeading(new Vector2d(-10, 10), Math.toRadians(130))
@@ -75,23 +73,24 @@ public class MeepMeepTesting {
 	}
 
 	public Action runCycleGPP() {
-		return drive.actionBuilder(new Pose2d(-10, 10, Math.toRadians(130)))
-				// first cycldrive.localizer.getPose(), poseMape
-				.strafeToLinearHeading(new Vector2d(20, 26), Math.toRadians(90))
+		return drive.actionBuilder((new Pose2d(-10, 10, Math.toRadians(130))))
+				// first cycle
+				.strafeToLinearHeading(new Vector2d(22, 22), Math.toRadians(90))
 				.afterDisp(10, startIntakeAction.get())
-				.splineToSplineHeading(new Pose2d(32, 48, Math.toRadians(90)), Math.toRadians(90))
+				.splineToSplineHeading(new Pose2d(36, 70, Math.toRadians(90)), Math.toRadians(90))
 				.afterDisp(10, shooter.stopIntakeAction())
-				.strafeToLinearHeading(new Vector2d(-10, 10), Math.toRadians(130))
+				.setReversed(true)
+				.splineToLinearHeading(new Pose2d(-10, 10, Math.toRadians(130)), Math.toRadians(190))
 				.stopAndAdd(shootAction.get())
 				.build();
 	}
 
 	public Action runCyclePGP() {
-		return drive.actionBuilder(new Pose2d(-10, 10, Math.toRadians(130)))
+		return drive.actionBuilder((new Pose2d(-10, 10, Math.toRadians(130))))
 				// second cycle
 				.strafeToSplineHeading(new Vector2d(0, 20), Math.toRadians(105))
 				.afterDisp(10, startIntakeAction.get())
-				.splineToLinearHeading(new Pose2d(10, 48, Math.toRadians(90)), Math.toRadians(90))
+				.splineToLinearHeading(new Pose2d(14, 70, Math.toRadians(90)), Math.toRadians(90))
 				.afterDisp(10, shooter.stopIntakeAction())
 				.strafeToLinearHeading(new Vector2d(-10, 10), Math.toRadians(130))
 				.stopAndAdd(shootAction.get())
@@ -101,9 +100,9 @@ public class MeepMeepTesting {
 	public Action runCyclePPG() {
 		return drive.actionBuilder(new Pose2d(-10, 10, Math.toRadians(130)))
 				// third cycle
-				.strafeToSplineHeading(new Vector2d(-11, 24), Math.toRadians(115))
+				.strafeToSplineHeading(new Vector2d(-8, 24), Math.toRadians(115))
 				.afterDisp(10, startIntakeAction.get())
-				.splineToLinearHeading(new Pose2d(-12, 48, Math.toRadians(90)), Math.toRadians(90))
+				.splineToLinearHeading(new Pose2d(-8, 66, Math.toRadians(90)), Math.toRadians(90))
 				.afterDisp(10, shooter.stopIntakeAction())
 				.setReversed(true)
 				.strafeToLinearHeading(new Vector2d(-10, 10), Math.toRadians(130))

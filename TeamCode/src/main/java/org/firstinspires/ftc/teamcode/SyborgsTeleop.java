@@ -117,7 +117,7 @@ public class SyborgsTeleop extends LinearOpMode {
 			shooter.maintainVelocity(0, autoAlign);
 		}
 		if (gamepad1.dpad_up) {
-			targetVelocity = 2000;
+			targetVelocity = 2400;
 		}
 		if (gamepad1.dpad_down) {
 			targetVelocity = 1350;
@@ -145,7 +145,7 @@ public class SyborgsTeleop extends LinearOpMode {
 		ll.updateRobotOrientation(yaw);
 		updateVision();
 
-		double turnPower = headingController.getTurnPower(pose, -72, Common.alliance == Common.Alliance.Red ? 72 : -72);
+		double turnPower = headingController.getTurnPower(pose, -68, Common.alliance == Common.Alliance.Red ? 72 : -72);
 		telemetry.addData("Turn Power", turnPower);
 		if (!autoPark) drive.setDrivePowers(new PoseVelocity2d(
 				Common.rotate(Common.rotate(linearMotion, -pose.heading.toDouble()), headingOffset),
@@ -162,6 +162,7 @@ public class SyborgsTeleop extends LinearOpMode {
 			if (!parkAction.run(packet)) {
 				autoPark = false;
 			}
+
 			FtcDashboard.getInstance().sendTelemetryPacket(packet);
 		}
 		telemetry.addData("Auto Park", autoPark);
@@ -177,7 +178,8 @@ public class SyborgsTeleop extends LinearOpMode {
 		Optional<Pair<Pose2d, Long>> p = ll.localizeRobotMT1();
 		if (p.isPresent()) {
 			poseFilter.updateVision(p.get().first, p.get().second);
-			headingOffset += poseFilter.getCurrentPose().heading.log() - oldHeading;
+			Pose2d raw = drive.localizer.getPose();
+			headingOffset += poseFilter.getPoseNoUpdate(raw).heading.log() - oldHeading;
 		}
 	}
 

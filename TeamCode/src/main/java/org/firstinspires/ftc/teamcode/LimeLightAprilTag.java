@@ -28,7 +28,7 @@ public class LimeLightAprilTag {
 	Telemetry telemetry;
 	public LimeLightAprilTag(HardwareMap hardwareMap, Telemetry telemetry) {
 		this.telemetry = telemetry;
-		limelight = hardwareMap.get(Limelight3A.class, "LimeLight3a");
+		limelight = hardwareMap.get(Limelight3A.class, "LimeLight3A");
 		forwarder = new PortForwarder("172.29.0.1", 5800, 5801, 5802, 5803, 5804, 5805, 5806, 5807, 5808, 5809);
 		forwarder.start();
 
