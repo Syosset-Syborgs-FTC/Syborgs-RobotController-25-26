@@ -30,9 +30,9 @@ public class SyborgsAuton extends LinearOpMode {
 	LimeLightAprilTag ll;
 	Shooter shooter;
 	PoseFilter poseFilter;
-	double shootingTime = 4;
+	double shootingTime = 5;
 
-	double preloadShootingTime = 2.5;
+	double preloadShootingTime = 3;
 	Supplier<Action> startIntakeAction = () -> new InstantAction(() -> {
 		shooter.startIntake(getRuntime());
 	});
@@ -100,9 +100,10 @@ public class SyborgsAuton extends LinearOpMode {
 		drive.updatePoseEstimate();
 		return drive.actionBuilder((new Pose2d(-10, 10, Math.toRadians(130))))
 				// first cycle
-				.strafeToLinearHeading(new Vector2d(22, 22), Math.toRadians(90))
+				.strafeToLinearHeading(new Vector2d(22, 22 ), Math.toRadians(90))// ORIGINALLY 22
 				.afterDisp(10, startIntakeAction.get())
-				.splineToSplineHeading(new Pose2d(36, 70, Math.toRadians(90)), Math.toRadians(90))
+				.splineToSplineHeading(new Pose2d(40, 75, Math.toRadians(90)), Math.toRadians(90))//70// x is 36
+		//	wait(1000);
 				.afterDisp(20, shooter.stopIntakeAction())
 				.setReversed(true)
 				.splineToLinearHeading(new Pose2d(-10, 10, Math.toRadians(130)), Math.toRadians(190))
