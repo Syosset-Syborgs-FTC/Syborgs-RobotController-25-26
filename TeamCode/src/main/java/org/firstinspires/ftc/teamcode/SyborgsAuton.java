@@ -13,6 +13,7 @@ import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.Pose2dDual;
 import com.acmerobotics.roadrunner.PoseMap;
 import com.acmerobotics.roadrunner.RaceAction;
+import com.acmerobotics.roadrunner.Rotation2d;
 import com.acmerobotics.roadrunner.SequentialAction;
 import com.acmerobotics.roadrunner.SleepAction;
 import com.acmerobotics.roadrunner.Vector2d;
@@ -26,13 +27,15 @@ import java.util.function.Supplier;
 @Autonomous
 public class SyborgsAuton extends LinearOpMode {
 
+	public static final Pose2d blueShootPose = new Pose2d(0, -4, Math.toRadians(-140));
+	public static final Pose2d redShootPose = new Pose2d(-10, 17, Math.toRadians(130));
 	MecanumDrive drive;
 	LimeLightAprilTag ll;
 	Shooter shooter;
 	PoseFilter poseFilter;
-	double shootingTime = 5;
+	double shootingTime = 5.7;
 
-	double preloadShootingTime = 3;
+	double preloadShootingTime = 3.5;
 	Supplier<Action> startIntakeAction = () -> new InstantAction(() -> {
 		shooter.startIntake(getRuntime());
 	});
@@ -51,6 +54,7 @@ public class SyborgsAuton extends LinearOpMode {
 	Pose2d lastPoseInit = new Pose2d(0, 0, Math.toRadians(180));
 	int obeliskID = -1;
 	PoseMap poseMap = new IdentityPoseMap();
+	boolean farStart = false;
 
 	@Override
 	public void runOpMode() {
@@ -67,13 +71,21 @@ public class SyborgsAuton extends LinearOpMode {
 		if (Common.alliance == Common.Alliance.Blue) {
 			poseMap = pose -> new Pose2dDual<>(pose.position.x, pose.position.y.unaryMinus(), pose.heading.inverse());
 		}
+//		while (opModeIsActive()) {
+//			drive.updatePoseEstimate();
+//			TelemetryPacket packet = new TelemetryPacket();
+//			Pose2d pose = drive.localizer.getPose();
+//			packet.fieldOverlay().setStroke("#3F51B5"); // blue for pinpoint pose
+//			Drawing.drawRobot(packet.fieldOverlay(), pose);
+//			FtcDashboard.getInstance().sendTelemetryPacket(packet);
+//		}
 		// ensure that the correct cycle is never shot last, so it doesn't become overflow and lose some bonus points
 		Action autonAction = new SequentialAction(runPreloaded(), runCycleGPP(), runCyclePPG(), leaveShootZone());
-//		if (obeliskID == 22) {
-//			autonAction = new SequentialAction(runPreloaded(), runCycleGPP(), runCyclePPG(), leaveShootZone());
-//		} else if (obeliskID == 23) {
-//			autonAction = new SequentialAction(runPreloaded(), runCyclePPG(), runCycleGPP(), leaveShootZone());
-//		}
+		if (obeliskID == 22) {
+			autonAction = new SequentialAction(runPreloaded(), runCycleGPP(), runCyclePPG(), leaveShootZone());
+		} else if (obeliskID == 23) {
+			autonAction = new SequentialAction(runPreloaded(), runCyclePPG(), runCycleGPP(), leaveShootZone());
+		}
 		Actions.runBlocking(new RaceAction(t -> {
 			shooter.updateIntake(getRuntime());
 			shooter.maintainVelocity(1350, true);
@@ -81,62 +93,170 @@ public class SyborgsAuton extends LinearOpMode {
 		}, autonAction));
 	}
 
+	public Action runPreloaded() {
+        if (Common.alliance == Common.Alliance.Red) {
+            return runPreloadedRed();
+        } else {
+            return runPreloadedBlue();
+        }
+    }
+
+    public Action runCycleGPP() {
+        if (Common.alliance == Common.Alliance.Red) {
+            return runCycleGPPRed();
+        } else {
+            return runCycleGPPBlue();
+        }
+    }
+
+//    public Action runCyclePGP() {
+//        if (Common.alliance == Common.Alliance.Red) {
+//            return runCyclePGPRed();
+//        } else {
+//            return runCyclePGPBlue();
+//        }
+//    }
+
+    public Action runCyclePPG() {
+        if (Common.alliance == Common.Alliance.Red) {
+            return runCyclePPGRed();
+        } else {
+            return runCyclePPGBlue();
+        }
+    }
 	public Action leaveShootZone() {
-		drive.updatePoseEstimate();
-		return drive.actionBuilder(new Pose2d(-10, 10, Math.toRadians(130)))
+		if (Common.alliance == Common.Alliance.Red) {
+			return leaveShootZoneRed();
+		} else {
+			return leaveShootZoneBlue();
+		}
+	}
+	public Action leaveShootZoneRed() {
+		return drive.actionBuilder(redShootPose)
+				.setTangent(Math.toRadians(70))
 				.splineToSplineHeading(new Pose2d(0, 55, Math.toRadians(90)), Math.toRadians(90))
 				.build();
 	}
-	public Action runPreloaded() {
-		drive.updatePoseEstimate();
-		return drive.actionBuilder(drive.localizer.getPose(), poseMap)
-				// shoot preloaded
-				.strafeToLinearHeading(new Vector2d(-10, 10), Math.toRadians(130))
-				.stopAndAdd(preloadShootAction.get())
+	public Action leaveShootZoneBlue() {
+		return drive.actionBuilder(blueShootPose)
+				.setTangent(Math.toRadians(-70))
+				.splineToSplineHeading(new Pose2d(12, -30, Math.toRadians(-90)), Math.toRadians(-90))
 				.build();
 	}
+    private Action runPreloadedRed() {
+        Pose2d start = drive.localizer.getPose();
+        return drive.actionBuilder(start)
+                // shoot preloaded
+                .splineToSplineHeading(redShootPose, Math.toRadians(180))
+                .stopAndAdd(preloadShootAction.get())
+                .build();
+    }
 
-	public Action runCycleGPP() {
-		drive.updatePoseEstimate();
-		return drive.actionBuilder((new Pose2d(-10, 10, Math.toRadians(130))))
-				// first cycle
-				.strafeToLinearHeading(new Vector2d(22, 22 ), Math.toRadians(90))// ORIGINALLY 22
-				.afterDisp(10, startIntakeAction.get())
-				.splineToSplineHeading(new Pose2d(40, 75, Math.toRadians(90)), Math.toRadians(90))//70// x is 36
-		//	wait(1000);
-				.afterDisp(20, shooter.stopIntakeAction())
-				.setReversed(true)
-				.splineToLinearHeading(new Pose2d(-10, 10, Math.toRadians(130)), Math.toRadians(190))
-				.stopAndAdd(shootAction.get())
-				.build();
-	}
+    private Action runCycleGPPRed() {
+        return drive.actionBuilder(redShootPose)
+                // first cycle
+                .afterDisp(10, startIntakeAction.get())
+                .setTangent(Math.toRadians(15))
+                .splineToSplineHeading(new Pose2d(44, 60, Math.toRadians(90)), Math.toRadians(90))
+                .afterDisp(20, shooter.stopIntakeAction())
+                .setReversed(true)
+                .splineToLinearHeading(redShootPose, Math.toRadians(225))
+                .stopAndAdd(shootAction.get())
+                .build();
+    }
 
-	public Action runCyclePGP() {
-		drive.updatePoseEstimate();
-		return drive.actionBuilder((new Pose2d(-10, 10, Math.toRadians(130))), poseMap)
-				// second cycle
-				.strafeToSplineHeading(new Vector2d(0, 20), Math.toRadians(105))
-				.afterDisp(10, startIntakeAction.get())
-				.splineToLinearHeading(new Pose2d(14, 70, Math.toRadians(90)), Math.toRadians(90))
-				.afterDisp(10, shooter.stopIntakeAction())
-				.strafeToLinearHeading(new Vector2d(-10, 10), Math.toRadians(130))
-				.stopAndAdd(shootAction.get())
-				.build();
-	}
+    private Action runCyclePGPRed() {
+        return drive.actionBuilder(redShootPose)
+                // second cycle
+                .afterDisp(10, startIntakeAction.get())
+                .setTangent(Math.toRadians(40))
+                .splineToLinearHeading(new Pose2d(14, 56, Math.toRadians(90)), Math.toRadians(90))
+                .afterDisp(10, shooter.stopIntakeAction())
+                .setReversed(true)
+                .splineToLinearHeading(redShootPose, Math.toRadians(230))
+                .stopAndAdd(shootAction.get())
+                .build();
+    }
 
-	public Action runCyclePPG() {
-		drive.updatePoseEstimate();
-		return drive.actionBuilder(new Pose2d(-10, 10, Math.toRadians(130)), poseMap)
-				// third cycle
-				.strafeToSplineHeading(new Vector2d(-8, 24), Math.toRadians(115))
-				.afterDisp(10, startIntakeAction.get())
-				.splineToLinearHeading(new Pose2d(-8, 66, Math.toRadians(90)), Math.toRadians(90))
-				.afterDisp(10, shooter.stopIntakeAction())
-				.setReversed(true)
-				.strafeToLinearHeading(new Vector2d(-10, 10), Math.toRadians(130))
-				.stopAndAdd(shootAction.get())
-				.build();
-	}
+    private Action runCyclePPGRed() {
+        return drive.actionBuilder(redShootPose)
+                // third cycle
+                .afterDisp(10, startIntakeAction.get())
+                .setTangent(Math.toRadians(90))
+                .splineToLinearHeading(new Pose2d(-4, 60, Math.toRadians(90)), Math.toRadians(90))
+                .afterDisp(10, shooter.stopIntakeAction())
+                .setReversed(true)
+                .splineToLinearHeading(redShootPose, Math.toRadians(270))
+                .stopAndAdd(shootAction.get())
+                .build();
+    }
+    private Action runPreloadedBlue() {
+        Pose2d start = drive.localizer.getPose();
+        return drive.actionBuilder(start)
+                // shoot preloaded
+                .splineToSplineHeading(blueShootPose, Math.toRadians(-180))
+                .stopAndAdd(preloadShootAction.get())
+                .build();
+    }
+
+    private Action runCycleGPPBlue() {
+        return drive.actionBuilder(blueShootPose)
+                // first cycle
+                .afterDisp(10, startIntakeAction.get())
+                .setTangent(Math.toRadians(-20))
+                .splineToSplineHeading(new Pose2d(61, -50, Math.toRadians(-90)), Math.toRadians(-90))
+                .afterDisp(20, shooter.stopIntakeAction())
+                .setReversed(true)
+                .splineToLinearHeading(blueShootPose, Math.toRadians(-225))
+                .stopAndAdd(shootAction.get())
+                .build();
+    }
+
+    private Action runCyclePGPBlue() {
+        return drive.actionBuilder(blueShootPose)
+                // second cycle
+                .afterDisp(10, startIntakeAction.get())
+                .setTangent(Math.toRadians(-40))
+                .splineToLinearHeading(new Pose2d(14, -56, Math.toRadians(-90)), Math.toRadians(-90))
+                .afterDisp(10, shooter.stopIntakeAction())
+                .setReversed(true)
+                .splineToLinearHeading(blueShootPose, Math.toRadians(-230))
+                .stopAndAdd(shootAction.get())
+                .build();
+    }
+
+    private Action runCyclePPGBlue() {
+        return drive.actionBuilder(blueShootPose)
+                // third cycle
+                .afterDisp(10, startIntakeAction.get())
+                .setTangent(Math.toRadians(-90))
+                .splineToLinearHeading(new Pose2d(8, -46, Math.toRadians(-90)), Math.toRadians(-90))
+                .afterDisp(10, shooter.stopIntakeAction())
+                .setReversed(true)
+                .splineToLinearHeading(blueShootPose, Math.toRadians(-270))
+                .stopAndAdd(shootAction.get())
+                .build();
+    }
+//	public static Pose2d mapPose(Pose2d p) {
+//		return new Pose2d(mapVector(p.position), mapRotation(p.heading));
+//	}
+//	public static Rotation2d mapRotation(Rotation2d rot) {
+//		if (Common.alliance == Common.Alliance.Blue) {
+//			return rot.inverse();
+//		}
+//		return rot;
+//	}
+//	public static double mapAngle(double r) {
+//		return mapRotation(Rotation2d.exp(r)).log();
+//	}
+//	public static Vector2d mapVector(Vector2d position) {
+//		if (Common.alliance == Common.Alliance.Blue) {
+//			return new Vector2d(position.x+10, -position.y + 8);
+//		}
+//		return new Vector2d(position.x, position.y + 4);
+//	}
+
+
 
 	public void runInitLoop() {
 		lastPoseInit = poseFilter.update(drive.localizer.getPose(), System.nanoTime());

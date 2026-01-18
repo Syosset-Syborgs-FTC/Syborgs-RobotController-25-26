@@ -33,7 +33,7 @@ public class LimeLightAprilTag {
 		forwarder.start();
 
 		telemetry.addLine("Forwarding 172.29.0.1:5801 -> 0.0.0.0:5801");
-		limelight.setPollRateHz(250);
+		limelight.setPollRateHz(50);
 		limelight.start();
 	}
 

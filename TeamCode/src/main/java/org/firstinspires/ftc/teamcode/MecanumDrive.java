@@ -67,15 +67,15 @@ public final class MecanumDrive {
         // inPerTick is 1/(13.26291192 ticks/mm of gobilda swing arm)/(25.4 mm/inch)
         public double inPerTick = 0.0029684340043598417;
         public double lateralInPerTick = inPerTick;
-        public double trackWidthTicks = 4703.695536103458;
+        public double trackWidthTicks = 4875.295542655033;
 
         // feedforward parameters (in tick units)
-        public double kS = 0.7265439955569681;
-        public double kV = 0.0005714716236920864;
+        public double kS = 0.8945558054344063;
+        public double kV = 0.0005412020938151222;
         public double kA = 0.0001;
 
         // path profile parameters (in inches)
-        public double maxWheelVel = 55;
+        public double maxWheelVel = 60;
         public double minProfileAccel = -50;
         public double maxProfileAccel = 50;
 

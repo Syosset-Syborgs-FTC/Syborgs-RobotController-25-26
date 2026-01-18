@@ -51,8 +51,10 @@ public class SyborgsTeleop extends LinearOpMode {
 		waitForStart();
 
 		while (opModeIsActive()) {
+			double cycleStart = getRuntime();
 			handleShooterInput();
 			driveRobot();
+			telemetry.addData("Cycle time (ms)", getRuntime()*1000 - cycleStart*1000);
 		}
 		ll.stop();
 	}
@@ -122,6 +124,7 @@ public class SyborgsTeleop extends LinearOpMode {
 		if (gamepad1.dpad_down) {
 			targetVelocity = 1350;
 		}
+
 	}
 
 	private void driveRobot() {
@@ -145,7 +148,9 @@ public class SyborgsTeleop extends LinearOpMode {
 		ll.updateRobotOrientation(yaw);
 		updateVision();
 
-		double turnPower = headingController.getTurnPower(pose, -68, Common.alliance == Common.Alliance.Red ? 72 : -72);
+		double turnPower = headingController.getTurnPower(pose,
+				Common.alliance == Common.Alliance.Red? -68: -74,
+				Common.alliance == Common.Alliance.Red ? 72 : -72);
 		telemetry.addData("Turn Power", turnPower);
 		if (!autoPark) drive.setDrivePowers(new PoseVelocity2d(
 				Common.rotate(Common.rotate(linearMotion, -pose.heading.toDouble()), headingOffset),
