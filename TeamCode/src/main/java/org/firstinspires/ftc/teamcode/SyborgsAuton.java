@@ -63,12 +63,16 @@ public class SyborgsAuton extends LinearOpMode {
 		poseFilter = new PoseFilter();
 		while (opModeInInit()) {
 			runInitLoop();
+			if (isStopRequested()) return;
 		}
 		waitForStart();
 		drive.localizer.setPose(lastPoseInit);
 		if (Common.alliance == Common.Alliance.Blue) {
 			poseMap = pose -> new Pose2dDual<>(pose.position.x, pose.position.y.unaryMinus(), pose.heading.inverse());
 		}
+
+		blueShootPose = new Pose2d(getAdjustedX(0), -4, Math.toRadians(-143));
+		redShootPose = new Pose2d(getAdjustedX(-10), 17, Math.toRadians(133));
 //		while (opModeIsActive()) {
 //			drive.updatePoseEstimate();
 //			TelemetryPacket packet = new TelemetryPacket();
@@ -86,18 +90,18 @@ public class SyborgsAuton extends LinearOpMode {
 		}
 		Actions.runBlocking(new RaceAction(t -> {
 			shooter.updateIntake(getRuntime());
-			shooter.maintainVelocity(1350, true);
+			shooter.maintainVelocity(1320, true);
 			return true;
 		}, autonAction));
 	}
 
-	public static final double FAR_START_OFFSET = -15.0;
+	public static final double FAR_START_OFFSET = -18.0;
 
 	private double getAdjustedX(double x) {
 		return farStart ? x + FAR_START_OFFSET : x;
 	}
-	public Pose2d blueShootPose = new Pose2d(getAdjustedX(0), -4, Math.toRadians(-140));
-	public Pose2d redShootPose = new Pose2d(getAdjustedX(-10), 17, Math.toRadians(130));
+	public Pose2d blueShootPose;
+	public Pose2d redShootPose;
 
 	public Action runPreloaded() {
         if (Common.alliance == Common.Alliance.Red) {
@@ -165,7 +169,7 @@ public class SyborgsAuton extends LinearOpMode {
 				// first cycle
 				.afterDisp(10, startIntakeAction.get())
 				.setTangent(Math.toRadians(15))
-				.splineToSplineHeading(new Pose2d(getAdjustedX(44), 60, Math.toRadians(90)), Math.toRadians(90))
+				.splineToSplineHeading(new Pose2d(getAdjustedX(44), 70, Math.toRadians(90)), Math.toRadians(90))
 				.afterDisp(20, shooter.stopIntakeAction())
 				.setReversed(true)
 				.splineToLinearHeading(redShootPose, Math.toRadians(225))
@@ -192,7 +196,7 @@ public class SyborgsAuton extends LinearOpMode {
 				// third cycle
 				.afterDisp(10, startIntakeAction.get())
 				.setTangent(Math.toRadians(90))
-				.splineToLinearHeading(new Pose2d(getAdjustedX(-4), 60, Math.toRadians(90)), Math.toRadians(90))
+				.splineToLinearHeading(new Pose2d(getAdjustedX(-7), 69, Math.toRadians(90)), Math.toRadians(90))
 				.afterDisp(10, shooter.stopIntakeAction())
 				.setReversed(true)
 				.splineToLinearHeading(redShootPose, Math.toRadians(270))

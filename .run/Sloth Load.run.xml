@@ -10,7 +10,7 @@
       </option>
       <option name="taskNames">
         <list>
-          <option value="FtcRobotController:testReleaseUnitTest" />
+          <option value=":TeamCode:deploySloth" />
         </list>
       </option>
       <option name="vmOptions" />

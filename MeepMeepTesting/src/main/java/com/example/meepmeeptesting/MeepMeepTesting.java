@@ -38,7 +38,7 @@ public class MeepMeepTesting {
 	public static void main(String[] args) {
 		System.setProperty("sun.java2d.opengl", "true");
 
-		Common.alliance = Common.Alliance.Blue;
+		Common.alliance = Common.Alliance.Red;
 
 		MeepMeep meepMeep = new MeepMeep(800);
 
