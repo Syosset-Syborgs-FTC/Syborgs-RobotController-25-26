@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
 import android.util.Pair;
-
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -12,7 +11,11 @@ import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-
+import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.ColorRangeSensor;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import java.util.Optional;
 
 @Config
@@ -24,17 +27,34 @@ public class SyborgsTeleop extends LinearOpMode {
 	private boolean autoAlign = false;
 	MecanumDrive drive;
 	Shooter shooter;
+	AutoSort autoSort;
+
+	private ElapsedTime servoTimer = new ElapsedTime();
+	private boolean movingRight = false;
 	boolean localized = false;
 	boolean lastLeftTrigger = false;
-
+	double actionEndTime = 0;
+	boolean Cycler = false;
 	boolean lastRightTrigger = false;
 	boolean shooterToggle = false;
 	double headingOffset = 0;
 	boolean slowDrive = false;
-	int cycleState = 0; // 0 = off, 1 = intake, 2 = outtake
+	int cycleState = 0;
 	boolean feedToggle = false;
 	PoseFilter poseFilter;
 	boolean autoPark = false;
+
+	private Servo Kicker, chuck;
+	private Servo angle;
+
+	private ColorRangeSensor sensor1, sensor2;
+	private int artifactCount = 0;
+	private double intakeReverseEndTime = 0;
+	private double sensor2CooldownTime = 0;
+	private boolean isIntakeReversing = false;
+
+	private final double DISTANCE_THRESHOLD = 5.0;
+
 	Action parkAction;
 
 	@Override
@@ -42,8 +62,18 @@ public class SyborgsTeleop extends LinearOpMode {
 		telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 		drive = new MecanumDrive(hardwareMap, new Pose2d(0, 0, Math.toRadians(180)));
 		ll = new LimeLightAprilTag(hardwareMap, telemetry);
+
+		// Fixed Order: Map hardware BEFORE passing hardwareMap to AutoSort
+		Kicker = hardwareMap.get(Servo.class, "k");
+		chuck = hardwareMap.get(Servo.class, "c");
+		angle = hardwareMap.get(Servo.class, "angle");
+		sensor1 = hardwareMap.get(ColorRangeSensor.class, "cs1");
+		sensor2 = hardwareMap.get(ColorRangeSensor.class, "cs2");
 		shooter = new Shooter(hardwareMap, telemetry);
+
+		autoSort = new AutoSort(hardwareMap, telemetry);
 		poseFilter = new PoseFilter();
+
 		while (opModeInInit()) {
 			runInitLoop();
 		}
@@ -51,10 +81,36 @@ public class SyborgsTeleop extends LinearOpMode {
 		waitForStart();
 
 		while (opModeIsActive()) {
+			// --- AUTO SORT START ---
 			double cycleStart = getRuntime();
+
+			int currentObeliskID = ll.getObeliskID(drive.localizer.getPose()).orElse(0);
+
+			autoSort.update(
+					gamepad1.right_bumper,
+					gamepad1.left_bumper,
+					gamepad1.right_trigger > 0.5,
+					gamepad1.dpad_right,
+					currentObeliskID,
+					Kicker,
+					chuck,
+					shooter,
+					getRuntime()
+			);
+
+			telemetry.addData("Inventory", "[ %s | %s | %s ]", autoSort.art1, autoSort.art2, autoSort.art3);
+			telemetry.addData("Count", autoSort.artifactCount);
+			telemetry.addData("AutoSort Cycle (ms)", getRuntime()*1000 - cycleStart*1000);
+
+			// --- AUTO SORT END ---
+
+			angle.setPosition(.5);
+			// Removed duplicate definition of cycleStart here
 			handleShooterInput();
 			driveRobot();
-			telemetry.addData("Cycle time (ms)", getRuntime()*1000 - cycleStart*1000);
+
+			telemetry.addData("Total Loop Cycle time (ms)", getRuntime()*1000 - cycleStart*1000);
+			telemetry.update();
 		}
 		ll.stop();
 	}
@@ -100,10 +156,12 @@ public class SyborgsTeleop extends LinearOpMode {
 		if (gamepad1.right_trigger > 0.5) {
 			if (!lastRightTrigger) {
 				lastRightTrigger = true;
+				chuck.setPosition(.7);
 				feedToggle = !feedToggle;
 			}
 		} else {
 			lastRightTrigger = false;
+			chuck.setPosition(.2);
 		}
 		if (gamepad1.left_trigger > 0.5) {
 			if (!lastLeftTrigger) {
@@ -119,12 +177,11 @@ public class SyborgsTeleop extends LinearOpMode {
 			shooter.maintainVelocity(0, autoAlign);
 		}
 		if (gamepad1.dpad_up) {
-			targetVelocity = 2400;
+			targetVelocity = 1000;
 		}
 		if (gamepad1.dpad_down) {
 			targetVelocity = 1350;
 		}
-
 	}
 
 	private void driveRobot() {
@@ -167,7 +224,6 @@ public class SyborgsTeleop extends LinearOpMode {
 			if (!parkAction.run(packet)) {
 				autoPark = false;
 			}
-
 			FtcDashboard.getInstance().sendTelemetryPacket(packet);
 		}
 		telemetry.addData("Auto Park", autoPark);
@@ -186,6 +242,39 @@ public class SyborgsTeleop extends LinearOpMode {
 			Pose2d raw = drive.localizer.getPose();
 			headingOffset += poseFilter.getPoseNoUpdate(raw).heading.log() - oldHeading;
 		}
+		double shooterTime = getRuntime();
+		if (sensor1.getDistance(DistanceUnit.CM) < DISTANCE_THRESHOLD && !isIntakeReversing) {
+			if (artifactCount >= 3) {
+				isIntakeReversing = true;
+				intakeReverseEndTime = shooterTime + 1.0;
+			}
+		}
+		if (shooterTime > sensor2CooldownTime) {
+			if (sensor2.getDistance(DistanceUnit.CM) < DISTANCE_THRESHOLD) {
+				artifactCount++;
+				String detectedColor = (sensor2.red() > sensor2.blue()) ? "RED" : "BLUE";
+				telemetry.addData("Chamber", "Artifact: " + detectedColor);
+				sensor2CooldownTime = shooterTime + 1.0;
+			}
+		}
+		if (Cycler) {
+			if (shooterTime < actionEndTime) {
+				cycleState = 1;
+				shooter.updateIntake(getRuntime());
+			} else {
+				Cycler = false;
+				cycleState = 0;
+			}
+		}
+		else if (isIntakeReversing) {
+			if (shooterTime < intakeReverseEndTime) {
+				shooter.intake.setPower(-1.0);
+			} else {
+				isIntakeReversing = false;
+				shooter.intake.setPower(0);
+			}
+		}
+		telemetry.addData("Artifact Count ", artifactCount);
 	}
 
 	private void runInitLoop() {
@@ -193,11 +282,9 @@ public class SyborgsTeleop extends LinearOpMode {
 		if (pose.isPresent()) {
 			Pose2d p = pose.get().first;
 			TelemetryPacket packet = new TelemetryPacket();
-
-			packet.fieldOverlay().setStroke("#4CAF50"); // green for mt1 pose
+			packet.fieldOverlay().setStroke("#4CAF50");
 			Drawing.drawRobot(packet.fieldOverlay(), p);
 			FtcDashboard.getInstance().sendTelemetryPacket(packet);
-
 			drive.localizer.setPose(p);
 		} else {
 			telemetry.addData("Pose", "AprilTags not available");
@@ -207,37 +294,27 @@ public class SyborgsTeleop extends LinearOpMode {
 			Common.alliance = Common.alliance.getOpposite();
 		}
 		telemetry.update();
-
 	}
 
 	private void sendPoseToDash(Pose2d pose) {
 		Optional<Pair<Pose2d, Long>> mt1Pose = ll.localizeRobotMT1();
 		Optional<Pair<Pose2d, Long>> mt2Pose = ll.localizeRobotMT2();
-
-		telemetry.update();
 		telemetry.addData("Obelisk ID", ll.getObeliskID(pose).map(x -> {
 			switch (x) {
-				case 21:
-					return "GPP";
-				case 22:
-					return "PGP";
-				case 23:
-					return "PPG";
-				default:
-					return x.toString();
+				case 21: return "GPP";
+				case 22: return "PGP";
+				case 23: return "PPG";
+				default: return x.toString();
 			}
 		}).orElse("No obelisk apriltag visible"));
 
 		TelemetryPacket packet = new TelemetryPacket();
-		packet.fieldOverlay().setStroke("#4CAF50"); // green for mt1 pose
+		packet.fieldOverlay().setStroke("#4CAF50");
 		mt1Pose.ifPresent(p -> Drawing.drawRobot(packet.fieldOverlay(), p.first));
-
-		packet.fieldOverlay().setStroke("#FF5722"); // red for mt2 pose
+		packet.fieldOverlay().setStroke("#FF5722");
 		mt2Pose.ifPresent(p -> Drawing.drawRobot(packet.fieldOverlay(), p.first));
-
-		packet.fieldOverlay().setStroke("#3F51B5"); // blue for pinpoint pose
+		packet.fieldOverlay().setStroke("#3F51B5");
 		Drawing.drawRobot(packet.fieldOverlay(), pose);
-
 		FtcDashboard.getInstance().sendTelemetryPacket(packet);
 	}
 }
