@@ -177,7 +177,7 @@ public class SyborgsTeleop extends LinearOpMode {
 			shooter.maintainVelocity(0, autoAlign);
 		}
 		if (gamepad1.dpad_up) {
-			targetVelocity = 1000;
+			targetVelocity = 2400;
 		}
 		if (gamepad1.dpad_down) {
 			targetVelocity = 1350;
