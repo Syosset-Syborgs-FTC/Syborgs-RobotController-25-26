@@ -13,10 +13,8 @@ import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.Pose2dDual;
 import com.acmerobotics.roadrunner.PoseMap;
 import com.acmerobotics.roadrunner.RaceAction;
-import com.acmerobotics.roadrunner.Rotation2d;
 import com.acmerobotics.roadrunner.SequentialAction;
 import com.acmerobotics.roadrunner.SleepAction;
-import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -28,9 +26,7 @@ import java.util.function.Supplier;
 public class SyborgsAuton extends LinearOpMode {
 
 	MecanumDrive drive;
-	LimeLightAprilTag ll;
 	Shooter shooter;
-	PoseFilter poseFilter;
 	double shootingTime = 5.7;
 
 	double preloadShootingTime = 3.5;
@@ -49,7 +45,6 @@ public class SyborgsAuton extends LinearOpMode {
 					shooter.stopFeedingAction()),
 			new SequentialAction(startIntakeAction.get())
 	);
-	Pose2d lastPoseInit = new Pose2d(0, 0, Math.toRadians(180));
 	int obeliskID = -1;
 	PoseMap poseMap = new IdentityPoseMap();
 	boolean farStart = false;
@@ -58,15 +53,12 @@ public class SyborgsAuton extends LinearOpMode {
 	public void runOpMode() {
 		telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 		drive = new MecanumDrive(hardwareMap, new Pose2d(0, 0, Math.toRadians(180)));
-		ll = new LimeLightAprilTag(hardwareMap, telemetry);
 		shooter = new Shooter(hardwareMap, telemetry);
-		poseFilter = new PoseFilter();
 		while (opModeInInit()) {
 			runInitLoop();
 			if (isStopRequested()) return;
 		}
 		waitForStart();
-		drive.localizer.setPose(lastPoseInit);
 		if (Common.alliance == Common.Alliance.Blue) {
 			poseMap = pose -> new Pose2dDual<>(pose.position.x, pose.position.y.unaryMinus(), pose.heading.inverse());
 		}
@@ -93,6 +85,7 @@ public class SyborgsAuton extends LinearOpMode {
 			shooter.maintainVelocity(1320, true);
 			return true;
 		}, autonAction));
+		((SensorFusion) drive.localizer).ll.close();
 	}
 
 	public static final double FAR_START_OFFSET = -18.0;
@@ -276,8 +269,7 @@ public class SyborgsAuton extends LinearOpMode {
 
 
 	public void runInitLoop() {
-		lastPoseInit = poseFilter.update(drive.localizer.getPose(), System.nanoTime());
-		telemetry.addData("Obelisk ID", ll.getObeliskID(poseFilter.getCurrentPose()).map(x -> {
+		telemetry.addData("Obelisk ID", ((SensorFusion) drive.localizer).getObeliskID().map(x -> {
 			obeliskID = x;
 			switch (x) {
 				case 21:
@@ -291,33 +283,28 @@ public class SyborgsAuton extends LinearOpMode {
 			}
 		}).orElse("No obelisk apriltag visible"));
 
-		ll.updateRobotOrientation(Math.toDegrees(lastPoseInit.heading.log()));
-		Optional<Pair<Pose2d, Long>> pose = ll.localizeRobotMT1();
-		if (pose.isPresent()) {
-			Pose2d p = pose.get().first;
-			TelemetryPacket packet = new TelemetryPacket();
-			poseFilter.updateVision(p, pose.get().second);
-			packet.fieldOverlay().setStroke("#4CAF50");
-			Drawing.drawRobot(packet.fieldOverlay(), p);
-			FtcDashboard.getInstance().sendTelemetryPacket(packet);
-		} else {
-			telemetry.addData("Pose", "AprilTags not available");
-		}
+		drive.updatePoseEstimate();
+		Pose2d pose = drive.localizer.getPose();
+		TelemetryPacket packet = new TelemetryPacket();
+		packet.fieldOverlay().setStroke("#4CAF50");
+		Drawing.drawRobot(packet.fieldOverlay(), pose);
+		FtcDashboard.getInstance().sendTelemetryPacket(packet);
+
 		telemetry.addData("Alliance (press right bumper to change): ", Common.alliance.toString());
-		if (Common.alliance == Common.Alliance.Blue && lastPoseInit.position.y > 0) {
+		if (Common.alliance == Common.Alliance.Blue && pose.position.y > 0) {
 			telemetry.addLine("Warning: Alliance set to Blue, but robot on Red side!");
 		}
-		if (Common.alliance == Common.Alliance.Red && lastPoseInit.position.y < 0) {
+		if (Common.alliance == Common.Alliance.Red && pose.position.y < 0) {
 			telemetry.addLine("Warning: Alliance set to Red, but robot is on Blue side!");
 		}
 		if (gamepad1.rightBumperWasPressed()) {
 			Common.alliance = Common.alliance.getOpposite();
 		}
 		telemetry.addData("Shot Offset (press left bumper to change): ", farStart ? "Far" : "Close");
-		if (farStart && lastPoseInit.position.x > 40) {
+		if (farStart && pose.position.x > 40) {
 			telemetry.addLine("Warning: Offset set to Far, but robot X position suggests Close start!");
 		}
-		if (!farStart && lastPoseInit.position.x < -40) {
+		if (!farStart && pose.position.x < -40) {
 			telemetry.addLine("Warning: Offset set to Close, but robot X position suggests Far start!");
 		}
 

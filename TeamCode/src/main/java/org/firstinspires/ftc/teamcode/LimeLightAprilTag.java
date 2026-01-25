@@ -10,7 +10,6 @@ import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
@@ -23,16 +22,12 @@ import java.util.stream.Collectors;
 
 public class LimeLightAprilTag {
 	Limelight3A limelight;
-
 	PortForwarder forwarder;
-	Telemetry telemetry;
-	public LimeLightAprilTag(HardwareMap hardwareMap, Telemetry telemetry) {
-		this.telemetry = telemetry;
+	public LimeLightAprilTag(HardwareMap hardwareMap) {
 		limelight = hardwareMap.get(Limelight3A.class, "LimeLight3A");
 		forwarder = new PortForwarder("172.29.0.1", 5800, 5801, 5802, 5803, 5804, 5805, 5806, 5807, 5808, 5809);
 		forwarder.start();
 
-		telemetry.addLine("Forwarding 172.29.0.1:5801 -> 0.0.0.0:5801");
 		limelight.setPollRateHz(50);
 		limelight.start();
 	}
@@ -43,7 +38,7 @@ public class LimeLightAprilTag {
 
 	public Optional<Pair<Pose2d, Long>> localizeRobotMT2() {
 		LLResult result = limelight.getLatestResult();
-		if (result != null && result.isValid()) {
+		if (result.isValid()) {
 			return Optional.of(Pair.create(flattenPose3DTo2d(result.getBotpose_MT2()), result.getControlHubTimeStampNanos()));
 		}
 		return Optional.empty();
@@ -51,7 +46,7 @@ public class LimeLightAprilTag {
 
 	public Optional<Pair<Pose2d, Long>> localizeRobotMT1() {
 		LLResult result = limelight.getLatestResult();
-		if (result != null && result.isValid()) {
+		if (result.isValid()) {
 			Pose3D pose = result.getBotpose();
 			return Optional.of(Pair.create(flattenPose3DTo2d(pose), result.getControlHubTimeStampNanos()));
 		}
@@ -63,7 +58,7 @@ public class LimeLightAprilTag {
 		double x = p.x;
 		double y = p.y;
 
-		// Extract yaw heading (radians)
+		// extract yaw heading (radians)
 		YawPitchRollAngles o = pose3D.getOrientation();
 		double heading = o.getYaw(AngleUnit.RADIANS);
 
@@ -78,7 +73,7 @@ public class LimeLightAprilTag {
 					.stream()
 					.filter(x ->
 							x.getFiducialId() == 21 || x.getFiducialId() == 22 || x.getFiducialId() == 23
-					) // Filter for obelisk tags
+					) // filter for obelisk tags
 					.collect(Collectors.toList());
 			if (fiducials.isEmpty()) return Optional.empty();
 
@@ -104,7 +99,7 @@ public class LimeLightAprilTag {
 		}
 		return Optional.empty();
 	}
-	public void stop() {
+	public void close() {
 		forwarder.stop();
 	}
 }

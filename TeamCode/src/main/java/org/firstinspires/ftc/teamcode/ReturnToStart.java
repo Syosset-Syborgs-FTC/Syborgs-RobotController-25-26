@@ -18,14 +18,12 @@ import java.util.Optional;
 public class ReturnToStart extends LinearOpMode {
 
 	MecanumDrive drive;
-	LimeLightAprilTag ll;
 	Shooter shooter;
 	PoseFilter poseFilter;
 	@Override
 	public void runOpMode() throws InterruptedException {
 		telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 		drive = new MecanumDrive(hardwareMap, new Pose2d(0, 0, Math.toRadians(180)));
-		ll = new LimeLightAprilTag(hardwareMap, telemetry);
 		shooter = new Shooter(hardwareMap, telemetry);
 		poseFilter = new PoseFilter();
 		while (opModeInInit()) {
@@ -38,7 +36,7 @@ public class ReturnToStart extends LinearOpMode {
 
 	}
 	public void runInitLoop() {
-		Optional<Pair<Pose2d, Long>> pose = ll.localizeRobotMT1();
+		Optional<Pair<Pose2d, Long>> pose = ((SensorFusion) drive.localizer).ll.localizeRobotMT1();
 		if (pose.isPresent()) {
 			Pose2d p = pose.get().first;
 			TelemetryPacket packet = new TelemetryPacket();
