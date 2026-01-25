@@ -5,7 +5,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
 @TeleOp(name="ASCENT Control")
-public class ASCENT extends LinearOpMode {
+public class Ascent extends LinearOpMode {
 
     // Declare the motor
     private DcMotor liftMotor;
