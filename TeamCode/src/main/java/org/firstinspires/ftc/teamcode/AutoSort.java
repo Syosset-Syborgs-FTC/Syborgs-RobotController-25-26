@@ -34,8 +34,8 @@ public class AutoSort {
     }
 
     public void update(boolean rb, boolean lb, boolean rt, boolean dpadRight, int id,
-                       Servo kicker, Servo chuck, Shooter shooter, double time) {
-
+                       Servo chuck, Shooter shooter, double time) {
+		Servo kicker = shooter.kicker;
         // 1. Intake Logic (Right Bumper)
         if (rb && !lastRB) kickerToggled = !kickerToggled;
         lastRB = rb;

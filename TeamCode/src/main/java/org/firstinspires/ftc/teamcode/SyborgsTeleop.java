@@ -36,13 +36,13 @@ public class SyborgsTeleop extends LinearOpMode {
 	boolean cycler = false;
 	boolean lastRightTrigger = false;
 	boolean shooterToggle = false;
-	double headingOffset = 0;
+	double headingOffset = Math.toRadians(180);
 	boolean slowDrive = false;
 	int cycleState = 0;
 	boolean feedToggle = false;
 	boolean autoPark = false;
 
-	private Servo kicker, chuck;
+	private Servo chuck;
 	private Servo angle;
 
 	private ColorRangeSensor sensor1, sensor2;
@@ -60,7 +60,6 @@ public class SyborgsTeleop extends LinearOpMode {
 		telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 		drive = new MecanumDrive(hardwareMap, new Pose2d(0, 0, Math.toRadians(180)));
 
-		kicker = hardwareMap.get(Servo.class, "k");
 		chuck = hardwareMap.get(Servo.class, "c");
 		angle = hardwareMap.get(Servo.class, "angle");
 		sensor1 = hardwareMap.get(ColorRangeSensor.class, "cs1");
@@ -79,17 +78,16 @@ public class SyborgsTeleop extends LinearOpMode {
 			double cycleStart = getRuntime();
 			int currentObeliskID = ((SensorFusion) drive.localizer).getObeliskID().orElse(0);
 
-			autoSort.update(
-					gamepad1.right_bumper,
-					gamepad1.left_bumper,
-					gamepad1.right_trigger > 0.5,
-					gamepad1.dpad_right,
-					currentObeliskID,
-					kicker,
-					chuck,
-					shooter,
-					getRuntime()
-			);
+//			autoSort.update(
+//					gamepad1.right_bumper,
+//					gamepad1.left_bumper,
+//					gamepad1.right_trigger > 0.5,
+//					gamepad1.dpad_right,
+//					currentObeliskID,
+//					chuck,
+//					shooter,
+//					getRuntime()
+//			);
 
 			telemetry.addData("Inventory", "[ %s | %s | %s ]", autoSort.art1, autoSort.art2, autoSort.art3);
 			telemetry.addData("Count", autoSort.artifactCount);
@@ -99,7 +97,6 @@ public class SyborgsTeleop extends LinearOpMode {
 			angle.setPosition(.5);
 			handleShooterInput();
 			driveRobot();
-			updateSorter();
 
 			telemetry.addData("Loop time (ms)", getRuntime()*1000 - cycleStart*1000);
 			telemetry.update();
@@ -174,6 +171,11 @@ public class SyborgsTeleop extends LinearOpMode {
 		if (gamepad1.dpad_down) {
 			targetVelocity = 1350;
 		}
+		if (gamepad1.dpad_right) {
+			shooter.kickBall();
+		} else {
+			shooter.stopKick();
+		}
 
 	}
 
@@ -234,7 +236,7 @@ public class SyborgsTeleop extends LinearOpMode {
 				Common.alliance == Common.Alliance.Red ? 72 : -72);
 		telemetry.addData("Turn Power", turnPower);
 		if (!autoPark) drive.setDrivePowers(new PoseVelocity2d(
-				Common.rotate(Common.rotate(linearMotion, -pose.heading.toDouble()), headingOffset),
+				Common.rotate(Common.rotate(linearMotion, -((SensorFusion) drive.localizer).getRawPinpointHeading()), headingOffset),
 				autoAlign ? turnPower : manualRotation
 		));
 		if (gamepad1.bWasPressed()) {
@@ -252,7 +254,7 @@ public class SyborgsTeleop extends LinearOpMode {
 		}
 		telemetry.addData("Auto Park", autoPark);
 		if (gamepad1.xWasPressed()) {
-			headingOffset = pose.heading.log() + Math.toRadians(180);
+			headingOffset = ((SensorFusion)drive.localizer).getRawPinpointHeading() + Math.toRadians(180);
 		}
 		telemetry.addData("Heading Offset", headingOffset);
 		sendPoseToDash(pose);

@@ -39,6 +39,9 @@ public class SensorFusion implements Localizer {
 		ll.updateRobotOrientation(filter.getPose(pinpointLocalizer.getPose()).heading.log());
 		return odoVel;
 	}
+	public double getRawPinpointHeading() {
+		return pinpointLocalizer.getPose().heading.log();
+	}
 	public Optional<Integer> getObeliskID() {
 		return ll.getObeliskID(getPose());
 	}

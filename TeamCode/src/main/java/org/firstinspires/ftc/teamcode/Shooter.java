@@ -28,13 +28,15 @@ public class Shooter {
 	private PIDFController flywheelController;
 	VoltageSensor voltage;
 	public Shooter(HardwareMap hardwareMap, Telemetry telemetry) {
+		this.telemetry = telemetry;
+
 		flywheel = (DcMotorEx) hardwareMap.dcMotor.get("st");
 		intake = hardwareMap.dcMotor.get("in");
 		transfer = hardwareMap.crservo.get("tn");
 		cycle = hardwareMap.crservo.get("ts");
 		rgbLight = hardwareMap.servo.get("rgb");
 		kicker = hardwareMap.servo.get("k");
-		this.telemetry = telemetry;
+		stopKick();
 
 		voltage = hardwareMap.voltageSensor.get("Expansion Hub 2");
 		flywheelController = new PIDFController(kP, kI, kD);
@@ -122,6 +124,9 @@ public class Shooter {
 		cycle.setPower(-1);
 	}
 	public void kickBall() {
-
+		kicker.setPosition(0.18);
+	}
+	public void stopKick() {
+		kicker.setPosition(0);
 	}
 }
