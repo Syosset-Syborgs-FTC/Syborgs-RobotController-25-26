@@ -15,38 +15,7 @@ public class AutoSort {
         this.telemetry = tele;
     }
 
-<<<<<<< Updated upstream
-    public void update(boolean rb, boolean lb, boolean rt, boolean dpadRight, int id,
-                       Servo chuck, Shooter shooter, double time) {
-		Servo kicker = shooter.kicker;
-        // 1. Intake Logic (Right Bumper)
-        if (rb && !lastRB) kickerToggled = !kickerToggled;
-        lastRB = rb;
-        if (kickerToggled) {
-            kicker.setPosition(K_ON);
-            if (time > intakeTime && artifactCount < 3) {
-                String color = getColor(s1);
-                if (!color.equals("null")) {
-                    if (art1.equals("null")) art1 = color;
-                    else if (art2.equals("null")) art2 = color;
-                    else if (art3.equals("null")) art3 = color;
-                    artifactCount++;
-                    intakeTime = time + INTAKE_COOLDOWN;
-                }
-            }
-        } else kicker.setPosition(K_OFF);
 
-        // 2. Exit Logic (Right Trigger + Sensor 2)
-        if (rt && time > exitTime) {
-            String seen = getColor(s2);
-            if (!seen.equals("null")) {
-                boolean removed = false;
-                if (seen.equals(art3)) { art3 = "null"; removed = true; }
-                else if (seen.equals(art2)) { art2 = "null"; removed = true; }
-                else if (seen.equals(art1)) { art1 = "null"; removed = true; }
-                if (removed) { artifactCount--; exitTime = time + EXIT_COOLDOWN; }
-            }
-=======
     public void update() {
         // Read color from Sensor 2
         String detectedColor = getColor(s2);
@@ -56,7 +25,7 @@ public class AutoSort {
             telemetry.addData("ColorDetected", detectedColor);
         } else {
             telemetry.addData("ColorDetected", "None/Searching...");
->>>>>>> Stashed changes
+
         }
 
         // Optional: Add Sensor 1 to telemetry if you need to see both
