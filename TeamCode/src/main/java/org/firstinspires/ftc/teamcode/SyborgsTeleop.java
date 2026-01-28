@@ -78,25 +78,19 @@ public class SyborgsTeleop extends LinearOpMode {
 			double cycleStart = getRuntime();
 			int currentObeliskID = ((SensorFusion) drive.localizer).getObeliskID().orElse(0);
 
-//			autoSort.update(
-//					gamepad1.right_bumper,
-//					gamepad1.left_bumper,
-//					gamepad1.right_trigger > 0.5,
-//					gamepad1.dpad_right,
-//					currentObeliskID,
-//					chuck,
-//					shooter,
-//					getRuntime()
-//			);
+			autoSort.update(
 
+			);
+/**
 			telemetry.addData("Inventory", "[ %s | %s | %s ]", autoSort.art1, autoSort.art2, autoSort.art3);
 			telemetry.addData("Count", autoSort.artifactCount);
 			telemetry.addData("Auto sort cycle (ms)", getRuntime()*1000 - cycleStart*1000);
 
-
+*/
 			angle.setPosition(.5);
 			handleShooterInput();
 			driveRobot();
+			updateSorter();
 
 			telemetry.addData("Loop time (ms)", getRuntime()*1000 - cycleStart*1000);
 			telemetry.update();
