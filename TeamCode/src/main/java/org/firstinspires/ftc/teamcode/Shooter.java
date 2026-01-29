@@ -124,9 +124,9 @@ public class Shooter {
 		cycle.setPower(-1);
 	}
 	public void kickBall() {
-		kicker.setPosition(0.18);
+		kicker.setPosition(0.3);
 	}
 	public void stopKick() {
-		kicker.setPosition(0);
+		kicker.setPosition(0.1);
 	}
 }

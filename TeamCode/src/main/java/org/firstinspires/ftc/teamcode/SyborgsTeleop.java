@@ -67,6 +67,7 @@ public class SyborgsTeleop extends LinearOpMode {
 		shooter = new Shooter(hardwareMap, telemetry);
 
 		autoSort = new AutoSort(hardwareMap, telemetry);
+		Common.telemetry = telemetry;
 
 		while (opModeInInit()) {
 			runInitLoop();
@@ -226,7 +227,7 @@ public class SyborgsTeleop extends LinearOpMode {
 		drive.updatePoseEstimate();
 		Pose2d pose = drive.localizer.getPose();
 		double turnPower = headingController.getTurnPower(pose,
-				Common.alliance == Common.Alliance.Red? -68: -74,
+				Common.alliance == Common.Alliance.Red? -66: -74,
 				Common.alliance == Common.Alliance.Red ? 72 : -72);
 		telemetry.addData("Turn Power", turnPower);
 		if (!autoPark) drive.setDrivePowers(new PoseVelocity2d(

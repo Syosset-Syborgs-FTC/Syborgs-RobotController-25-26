@@ -5,6 +5,9 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
+import java.util.Optional;
+import java.util.OptionalInt;
+
 public class AutoSort {
     private final ColorRangeSensor s1, s2;
     private final Telemetry telemetry;
@@ -17,38 +20,30 @@ public class AutoSort {
 
 
     public void update() {
-        // Read color from Sensor 2
-        String detectedColor = getColor(s2);
+        int detectedColor = getColor(s2);
 
-        // Simple Telemetry Output
-        if (detectedColor.equals("Green") || detectedColor.equals("Purple")) {
+        if (detectedColor == 1 || detectedColor == 2) {
             telemetry.addData("ColorDetected", detectedColor);
         } else {
             telemetry.addData("ColorDetected", "None/Searching...");
 
         }
 
-        // Optional: Add Sensor 1 to telemetry if you need to see both
         telemetry.addData("Sensor 1 Sees", getColor(s1));
     }
 
-    private String getColor(ColorRangeSensor s) {
-        // Only detect if something is within 5cm (prevents reading "noise" from the floor)
-        if (s.getDistance(DistanceUnit.CM) < 5.0) {
-            int r = s.red();
-            int g = s.green();
-            int b = s.blue();
+    private int getColor(ColorRangeSensor s) {
+            double r = s.getNormalizedColors().red;
+            double g = s.getNormalizedColors().green;
+            double b = s.getNormalizedColors().blue;
+			telemetry.addData("color", "%f %f %f", r,g, b);
 
-            // Logic from REV video: Compare relative channel strength
-            // Green is dominant
-            if (g > r && g > b) {
-                return "Green";
-            }
-            // Purple/Red is dominant over Blue
-            else if (r > g) {
-                return "Purple";
-            }
+		telemetry.addData("color2", s.getNormalizedColors().toColor());
+        if (s.getDistance(DistanceUnit.CM) < 5.0) {
+
+			// 1 = green, 2 = purple
+
         }
-        return "null";
+        return 0;
     }
 }

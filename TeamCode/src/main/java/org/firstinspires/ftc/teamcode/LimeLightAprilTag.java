@@ -9,6 +9,7 @@ import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.sun.tools.javac.code.Attribute;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
@@ -16,6 +17,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -48,6 +50,9 @@ public class LimeLightAprilTag {
 		LLResult result = limelight.getLatestResult();
 		if (result.isValid()) {
 			Pose3D pose = result.getBotpose();
+			if (Common.telemetry != null) {
+				Common.telemetry.addData("MT1 std dev", Arrays.toString(result.getStddevMt1()));
+			}
 			return Optional.of(Pair.create(flattenPose3DTo2d(pose), result.getControlHubTimeStampNanos()));
 		}
 		return Optional.empty();

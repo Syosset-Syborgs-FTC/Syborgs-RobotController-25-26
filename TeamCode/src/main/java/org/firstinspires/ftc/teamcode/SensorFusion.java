@@ -35,7 +35,9 @@ public class SensorFusion implements Localizer {
 
 		ll
 			.localizeRobotMT1()
-			.ifPresent(pair -> filter.updateVision(pair.first, pair.second));
+			.ifPresent(pair -> {
+				filter.updateVision(pair.first, pair.second);
+			});
 		ll.updateRobotOrientation(filter.getPose(pinpointLocalizer.getPose()).heading.log());
 		return odoVel;
 	}
