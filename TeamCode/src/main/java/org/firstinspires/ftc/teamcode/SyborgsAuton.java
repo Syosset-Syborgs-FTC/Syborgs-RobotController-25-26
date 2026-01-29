@@ -32,6 +32,7 @@ public class SyborgsAuton extends LinearOpMode {
 	double preloadShootingTime = 3.5;
 	Supplier<Action> startIntakeAction = () -> new InstantAction(() -> {
 		shooter.startIntake(getRuntime());
+		shooter.stopKick();
 	});
 	Supplier<Action> shootAction = () -> new ParallelAction(
 			new SequentialAction(shooter.feedBallsAction(),
@@ -65,14 +66,7 @@ public class SyborgsAuton extends LinearOpMode {
 
 		blueShootPose = new Pose2d(getAdjustedX(0), -4, Math.toRadians(-143));
 		redShootPose = new Pose2d(getAdjustedX(-10), 17, Math.toRadians(133));
-//		while (opModeIsActive()) {
-//			drive.updatePoseEstimate();
-//			TelemetryPacket packet = new TelemetryPacket();
-//			Pose2d pose = drive.localizer.getPose();
-//			packet.fieldOverlay().setStroke("#3F51B5"); // blue for pinpoint pose
-//			Drawing.drawRobot(packet.fieldOverlay(), pose);
-//			FtcDashboard.getInstance().sendTelemetryPacket(packet);
-//		}
+
 		// ensure that the correct cycle is never shot last, so it doesn't become overflow and lose some bonus points
 		Action autonAction = new SequentialAction(runPreloaded(), runCycleGPP(), runCyclePPG(), leaveShootZone());
 		if (obeliskID == 22) {
@@ -82,7 +76,7 @@ public class SyborgsAuton extends LinearOpMode {
 		}
 		Actions.runBlocking(new RaceAction(t -> {
 			shooter.updateIntake(getRuntime());
-			shooter.maintainVelocity(1320, true);
+			shooter.maintainVelocity(1260, true);
 			return true;
 		}, autonAction));
 		((SensorFusion) drive.localizer).ll.close();
@@ -91,7 +85,7 @@ public class SyborgsAuton extends LinearOpMode {
 	public static final double FAR_START_OFFSET = -18.0;
 
 	private double getAdjustedX(double x) {
-		return farStart ? x + FAR_START_OFFSET : x;
+		return farStart ? x + FAR_START_OFFSET : x + 6-2;
 	}
 	public Pose2d blueShootPose;
 	public Pose2d redShootPose;
@@ -138,7 +132,7 @@ public class SyborgsAuton extends LinearOpMode {
 	public Action leaveShootZoneRed() {
 		return drive.actionBuilder(redShootPose)
 				.setTangent(Math.toRadians(70))
-				.splineToSplineHeading(new Pose2d(getAdjustedX(0), 55, Math.toRadians(90)), Math.toRadians(90))
+				.splineToSplineHeading(new Pose2d(getAdjustedX(0), 50, Math.toRadians(90)), Math.toRadians(90))
 				.build();
 	}
 

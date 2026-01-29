@@ -115,7 +115,10 @@ public class Shooter {
 		intake.setPower(0);
 	}
 	public Action stopIntakeAction() {
-		return new InstantAction(this::stopIntake);
+		return new InstantAction(() -> {
+//			kickBall();
+			stopIntake();
+		});
 	}
 
 	public void outtakeBalls() {
