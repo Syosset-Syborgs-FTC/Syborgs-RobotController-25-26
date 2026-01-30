@@ -7,8 +7,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 @Autonomous(name = "Blue Close", group = "Blue")
 public class BlueClose extends SyborgsAutonBase {
 
-	// Blue Close: Adjust X by +4
-	private final Pose2d shootPose = new Pose2d(4, -4, Math.toRadians(-143));
+	private final Pose2d shootPose = new Pose2d(-18, -4, Math.toRadians(-143));
 
 	@Override
 	protected Pose2d getStartPose() {
@@ -33,7 +32,7 @@ public class BlueClose extends SyborgsAutonBase {
 		return drive.actionBuilder(shootPose)
 				.afterDisp(10, startIntakeAction.get())
 				.setTangent(Math.toRadians(-20))
-				.splineToSplineHeading(new Pose2d(65, -50, Math.toRadians(-90)), Math.toRadians(-90))
+				.splineToSplineHeading(new Pose2d(43, -50, Math.toRadians(-90)), Math.toRadians(-90))
 				.afterDisp(20, shooter.stopIntakeAction())
 				.setReversed(true)
 				.splineToLinearHeading(shootPose, Math.toRadians(-225))
@@ -46,7 +45,7 @@ public class BlueClose extends SyborgsAutonBase {
 		return drive.actionBuilder(shootPose)
 				.afterDisp(10, startIntakeAction.get())
 				.setTangent(Math.toRadians(-90))
-				.splineToLinearHeading(new Pose2d(12, -46, Math.toRadians(-90)), Math.toRadians(-90))
+				.splineToLinearHeading(new Pose2d(-10, -46, Math.toRadians(-90)), Math.toRadians(-90))
 				.afterDisp(10, shooter.stopIntakeAction())
 				.setReversed(true)
 				.splineToLinearHeading(shootPose, Math.toRadians(-270))
@@ -58,7 +57,7 @@ public class BlueClose extends SyborgsAutonBase {
 	protected Action leaveShootZone() {
 		return drive.actionBuilder(shootPose)
 				.setTangent(Math.toRadians(-70))
-				.splineToSplineHeading(new Pose2d(16, -30, Math.toRadians(-90)), Math.toRadians(-90))
+				.splineToSplineHeading(new Pose2d(-6, -30, Math.toRadians(-90)), Math.toRadians(-90))
 				.build();
 	}
 }

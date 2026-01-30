@@ -140,7 +140,7 @@ public class SyborgsTeleop extends LinearOpMode {
 		if (gamepad1.right_trigger > 0.5) {
 			if (!lastRightTrigger) {
 				lastRightTrigger = true;
-				chuck.setPosition(.7);
+				chuck.setPosition(1);
 				feedToggle = !feedToggle;
 			}
 		} else {

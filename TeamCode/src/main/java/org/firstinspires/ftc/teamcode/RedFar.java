@@ -7,7 +7,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 @Autonomous(name = "Red Far", group = "Red")
 public class RedFar extends SyborgsAutonBase {
 
-	private final Pose2d shootPose = new Pose2d(-28, 17, Math.toRadians(133));
+	private final Pose2d shootPose = new Pose2d(-6, 17, Math.toRadians(133));
 
 	@Override
 	protected Pose2d getStartPose() {
@@ -32,7 +32,7 @@ public class RedFar extends SyborgsAutonBase {
 		return drive.actionBuilder(shootPose)
 				.afterDisp(10, startIntakeAction.get())
 				.setTangent(Math.toRadians(15))
-				.splineToSplineHeading(new Pose2d(26, 70, Math.toRadians(90)), Math.toRadians(90))
+				.splineToSplineHeading(new Pose2d(48, 70, Math.toRadians(90)), Math.toRadians(90))
 				.afterDisp(20, shooter.stopIntakeAction())
 				.setReversed(true)
 				.splineToLinearHeading(shootPose, Math.toRadians(225))
@@ -45,7 +45,7 @@ public class RedFar extends SyborgsAutonBase {
 		return drive.actionBuilder(shootPose)
 				.afterDisp(10, startIntakeAction.get())
 				.setTangent(Math.toRadians(90))
-				.splineToLinearHeading(new Pose2d(-25, 69, Math.toRadians(90)), Math.toRadians(90))
+				.splineToLinearHeading(new Pose2d(-3, 69, Math.toRadians(90)), Math.toRadians(90))
 				.afterDisp(10, shooter.stopIntakeAction())
 				.setReversed(true)
 				.splineToLinearHeading(shootPose, Math.toRadians(270))
@@ -57,7 +57,7 @@ public class RedFar extends SyborgsAutonBase {
 	protected Action leaveShootZone() {
 		return drive.actionBuilder(shootPose)
 				.setTangent(Math.toRadians(70))
-				.splineToSplineHeading(new Pose2d(-18, 50, Math.toRadians(90)), Math.toRadians(90))
+				.splineToSplineHeading(new Pose2d(4, 50, Math.toRadians(90)), Math.toRadians(90))
 				.build();
 	}
 }
