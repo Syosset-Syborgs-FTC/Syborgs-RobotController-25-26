@@ -60,7 +60,6 @@ public class SyborgsTeleop extends LinearOpMode {
 		telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 		drive = new MecanumDrive(hardwareMap, new Pose2d(0, 0, Math.toRadians(180)));
 
-		chuck = hardwareMap.get(Servo.class, "c");
 		angle = hardwareMap.get(Servo.class, "angle");
 		sensor1 = hardwareMap.get(ColorRangeSensor.class, "cs1");
 		sensor2 = hardwareMap.get(ColorRangeSensor.class, "cs2");
@@ -140,12 +139,12 @@ public class SyborgsTeleop extends LinearOpMode {
 		if (gamepad1.right_trigger > 0.5) {
 			if (!lastRightTrigger) {
 				lastRightTrigger = true;
-				chuck.setPosition(1);
+				shooter.chuckBalls();
 				feedToggle = !feedToggle;
 			}
 		} else {
 			lastRightTrigger = false;
-			chuck.setPosition(.2);
+			shooter.stopChucking();
 		}
 		if (gamepad1.left_trigger > 0.5) {
 			if (!lastLeftTrigger) {

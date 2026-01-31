@@ -6,8 +6,11 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
 @Autonomous(name = "Blue Far", group = "Blue")
 public class BlueFar extends SyborgsAutonBase {
-
-	private final Pose2d shootPose = new Pose2d(4, -4, Math.toRadians(-143));
+	@Override
+	protected int getShootVelocity() {
+		return 1320;
+	}
+	private final Pose2d shootPose = new Pose2d(-8, -10, Math.toRadians(-143));
 
 	@Override
 	protected Pose2d getStartPose() {
@@ -20,7 +23,7 @@ public class BlueFar extends SyborgsAutonBase {
 	}
 
 	@Override
-	protected Action buildPathAction() {
+	protected Action shootPreloaded() {
 		return drive.actionBuilder(drive.localizer.getPose())
 				.splineToSplineHeading(shootPose, Math.toRadians(-180))
 				.stopAndAdd(preloadShootAction.get())
@@ -29,34 +32,36 @@ public class BlueFar extends SyborgsAutonBase {
 
 	@Override
 	protected Action runCycleGPP() {
-		return drive.actionBuilder(shootPose)
-				.afterDisp(10, startIntakeAction.get())
-				.setTangent(Math.toRadians(-20))
-				.splineToSplineHeading(new Pose2d(65, -50, Math.toRadians(-90)), Math.toRadians(-90))
-				.afterDisp(20, shooter.stopIntakeAction())
+		Pose2d shootPoseOverride =  new Pose2d(-14, -10, Math.toRadians(-143));
+		return drive.actionBuilder(drive.localizer.getPose())
+//				.afterDisp(10, startIntakeAction.get())
+				.setTangent(Math.toRadians(0))
+				.splineToSplineHeading(new Pose2d(53, -50, Math.toRadians(-90)), Math.toRadians(-90))
+//				.afterDisp(20, shooter.stopIntakeAction())
 				.setReversed(true)
-				.splineToLinearHeading(shootPose, Math.toRadians(-225))
+				.splineToLinearHeading(shootPoseOverride, Math.toRadians(180))
 				.stopAndAdd(shootAction.get())
 				.build();
 	}
 
 	@Override
 	protected Action runCyclePPG() {
-		return drive.actionBuilder(shootPose)
-				.afterDisp(10, startIntakeAction.get())
-				.setTangent(Math.toRadians(-90))
-				.splineToLinearHeading(new Pose2d(12, -46, Math.toRadians(-90)), Math.toRadians(-90))
-				.afterDisp(10, shooter.stopIntakeAction())
+		Pose2d shootPoseOverride =  new Pose2d(-14, -10, Math.toRadians(-143));
+		return drive.actionBuilder(drive.localizer.getPose())
+//				.afterDisp(10, startIntakeAction.get())
+				.setTangent(Math.toRadians(-30))
+				.splineToLinearHeading(new Pose2d(-2, -46, Math.toRadians(-90)), Math.toRadians(-90))
+//				.afterDisp(10, shooter.stopIntakeAction())
 				.setReversed(true)
-				.splineToLinearHeading(shootPose, Math.toRadians(-270))
+				.splineToLinearHeading(shootPoseOverride, Math.toRadians(-270))
 				.stopAndAdd(shootAction.get())
 				.build();
 	}
 
 	@Override
 	protected Action leaveShootZone() {
-		return drive.actionBuilder(shootPose)
-				.setTangent(Math.toRadians(-70))
+		return drive.actionBuilder(drive.localizer.getPose())
+				.setTangent(Math.toRadians(-90))
 				.splineToSplineHeading(new Pose2d(16, -30, Math.toRadians(-90)), Math.toRadians(-90))
 				.build();
 	}

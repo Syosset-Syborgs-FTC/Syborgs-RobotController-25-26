@@ -13,18 +13,26 @@ import com.acmerobotics.roadrunner.SleepAction;
 import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 public abstract class SyborgsAutonBase extends LinearOpMode {
 
+	protected int getShootVelocity() {
+		return 1260;
+	}
 	protected MecanumDrive drive;
 	protected Shooter shooter;
 	protected int obeliskID = -1;
 
-	protected double shootingTime = 5.7;
-	protected double preloadShootingTime = 3.5;
+	protected double shootingTime = 5;
+	protected double preloadShootingTime = 4.5;
 
 	protected Supplier<Action> startIntakeAction = () -> new InstantAction(() -> {
+		shooter.startIntake(getRuntime());
+		shooter.stopKick();
+	});
+	protected Supplier<Action> preloadStartIntakeAction = () -> new InstantAction(() -> {
 		shooter.startIntake(getRuntime());
 		shooter.stopKick();
 	});
@@ -32,26 +40,29 @@ public abstract class SyborgsAutonBase extends LinearOpMode {
 	protected Supplier<Action> shootAction = () -> new ParallelAction(
 			new SequentialAction(shooter.feedBallsAction(),
 					new SleepAction(shootingTime),
-					shooter.stopFeedingAction()),
-			new SequentialAction(startIntakeAction.get(), new SleepAction(0.5), shooter.stopIntakeAction(), new SleepAction(0.5), startIntakeAction.get(), new SleepAction(0.5), shooter.stopIntakeAction(), new SleepAction(0.5), startIntakeAction.get(), new SleepAction(0.5), shooter.stopIntakeAction())
+					shooter.stopFeedingAction(),
+					new InstantAction(shooter::stopChucking)),
+			new SequentialAction(shooter.stopIntakeAction(), new SleepAction(0.2), startIntakeAction.get(), new SleepAction(0.6),new InstantAction(shooter::chuckBalls))
 	);
 
 	protected Supplier<Action> preloadShootAction = () -> new ParallelAction(
 			new SequentialAction(shooter.feedBallsAction(),
 					new SleepAction(preloadShootingTime),
 					shooter.stopFeedingAction()),
-			new SequentialAction(startIntakeAction.get())
+			new SequentialAction(preloadStartIntakeAction.get())
 	);
 
 	@Override
 	public void runOpMode() {
 		telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
-
+		Common.telemetry = telemetry;
 		Pose2d startPose = getStartPose();
 		drive = new MecanumDrive(hardwareMap, startPose);
 		shooter = new Shooter(hardwareMap, telemetry);
 
 		setAlliance();
+		shooter.stopChucking();
+		shooter.stopKick();
 
 		while (opModeInInit()) {
 			runInitLoop();
@@ -60,32 +71,37 @@ public abstract class SyborgsAutonBase extends LinearOpMode {
 
 		waitForStart();
 
-		Action pathAction = buildPathAction();
 		Action fullSequence;
 
 		Action defaultSeq = new SequentialAction(
-				pathAction,
-				runCycleGPP(),
-				runCyclePPG(),
-				leaveShootZone()
+				lazyShootPreloaded(),
+				lazyRunCycleGPP(),
+				lazyRunCyclePPG(),
+				lazyLeaveShootZone()
 		);
 
 		Action swapSeq = new SequentialAction(
-				pathAction,
-				runCyclePPG(),
-				runCycleGPP(),
-				leaveShootZone()
+				lazyShootPreloaded(),
+				lazyRunCyclePPG(),
+				lazyRunCycleGPP(),
+				lazyLeaveShootZone()
 		);
 
-		if (obeliskID == 23) {
+//		if (obeliskID == 23) {
 			fullSequence = swapSeq;
-		} else {
-			fullSequence = defaultSeq;
-		}
-
+//		} else {
+//			fullSequence = defaultSeq;
+//		}
+		shooter.startIntake(getRuntime());
 		Actions.runBlocking(new RaceAction(t -> {
 			shooter.updateIntake(getRuntime());
-			shooter.maintainVelocity(1260, true);
+			shooter.neutralKick();
+			shooter.maintainVelocity(getShootVelocity(), true);
+			TelemetryPacket packet = new TelemetryPacket();
+
+			packet.fieldOverlay().setStroke("#FF0000");
+			Drawing.drawRobot(packet.fieldOverlay(), drive.localizer.getPose());
+			FtcDashboard.getInstance().sendTelemetryPacket(packet);
 			return true;
 		}, fullSequence));
 
@@ -116,8 +132,46 @@ public abstract class SyborgsAutonBase extends LinearOpMode {
 	protected abstract Pose2d getStartPose();
 	protected abstract void setAlliance();
 
-	protected abstract Action buildPathAction();
+	protected abstract Action shootPreloaded();
 	protected abstract Action runCycleGPP();
 	protected abstract Action runCyclePPG();
 	protected abstract Action leaveShootZone();
+	public Action lazyShootPreloaded() {
+		AtomicReference<Action> action = new AtomicReference<>();
+		return t -> {
+			if (action.get() == null) {
+				action.set(shootPreloaded());
+			}
+			return action.get().run(t);
+		};
+	}
+	public Action lazyRunCycleGPP() {
+		AtomicReference<Action> action = new AtomicReference<>();
+		return t -> {
+			if (action.get() == null) {
+				action.set(runCycleGPP());
+			}
+			return action.get().run(t);
+		};
+	}
+
+	public Action lazyRunCyclePPG() {
+		AtomicReference<Action> action = new AtomicReference<>();
+		return t -> {
+			if (action.get() == null) {
+				action.set(runCyclePPG());
+			}
+			return action.get().run(t);
+		};
+	}
+
+	public Action lazyLeaveShootZone() {
+		AtomicReference<Action> action = new AtomicReference<>();
+		return t -> {
+			if (action.get() == null) {
+				action.set(leaveShootZone());
+			}
+			return action.get().run(t);
+		};
+	}
 }

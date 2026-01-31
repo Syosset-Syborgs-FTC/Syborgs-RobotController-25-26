@@ -20,7 +20,7 @@ public class RedClose extends SyborgsAutonBase {
 	}
 
 	@Override
-	protected Action buildPathAction() {
+	protected Action shootPreloaded() {
 		return drive.actionBuilder(drive.localizer.getPose())
 				.splineToSplineHeading(shootPose, Math.toRadians(180))
 				.stopAndAdd(preloadShootAction.get())

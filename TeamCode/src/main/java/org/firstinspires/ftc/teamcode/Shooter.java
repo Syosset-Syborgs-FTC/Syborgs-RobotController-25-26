@@ -23,7 +23,7 @@ public class Shooter {
 	public volatile static double kI = 0.00052;
 	public volatile static double kD = 0.0001;
 	public volatile static double kF = 0.0052;
-	public Servo rgbLight, kicker;
+	public Servo rgbLight, kicker, chuck;
 	private Telemetry telemetry;
 	private PIDFController flywheelController;
 	VoltageSensor voltage;
@@ -36,6 +36,8 @@ public class Shooter {
 		cycle = hardwareMap.crservo.get("ts");
 		rgbLight = hardwareMap.servo.get("rgb");
 		kicker = hardwareMap.servo.get("k");
+		chuck = hardwareMap.get(Servo.class, "c");
+
 		stopKick();
 
 		voltage = hardwareMap.voltageSensor.get("Expansion Hub 2");
@@ -116,9 +118,16 @@ public class Shooter {
 	}
 	public Action stopIntakeAction() {
 		return new InstantAction(() -> {
-//			kickBall();
 			stopIntake();
+			stopChucking();
 		});
+	}
+	public void chuckBalls() {
+		chuck.setPosition(1);
+	}
+	public void stopChucking() {
+		chuck.setPosition(0.2);
+		telemetry.addLine("stopped chuck");
 	}
 
 	public void outtakeBalls() {
@@ -131,5 +140,8 @@ public class Shooter {
 	}
 	public void stopKick() {
 		kicker.setPosition(0.1);
+	}
+	public void neutralKick() {
+		kicker.setPosition(0.);
 	}
 }
