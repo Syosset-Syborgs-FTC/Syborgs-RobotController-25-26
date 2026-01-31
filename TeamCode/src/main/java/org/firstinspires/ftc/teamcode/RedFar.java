@@ -44,7 +44,7 @@ public class RedFar extends SyborgsAutonBase {
 	protected Action runCyclePPG() {
 		return drive.actionBuilder(drive.localizer.getPose())
 //				.afterDisp(10, startIntakeAction.get())
-				.setTangent(Math.toRadians(90))
+				.setTangent(Math.toRadians(60))
 				.splineToLinearHeading(new Pose2d(-3, 69, Math.toRadians(90)), Math.toRadians(90))
 //				.afterDisp(10, shooter.stopIntakeAction())
 				.setReversed(true)
