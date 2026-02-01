@@ -32,8 +32,8 @@ public class Shooter {
 
 		flywheel = (DcMotorEx) hardwareMap.dcMotor.get("st");
 		intake = hardwareMap.dcMotor.get("in");
-		transfer = hardwareMap.crservo.get("tn");
-		cycle = hardwareMap.crservo.get("ts");
+		transfer = hardwareMap.crservo.get("ts");
+		cycle = hardwareMap.crservo.get("tn");
 		rgbLight = hardwareMap.servo.get("rgb");
 		kicker = hardwareMap.servo.get("k");
 		chuck = hardwareMap.get(Servo.class, "c");
