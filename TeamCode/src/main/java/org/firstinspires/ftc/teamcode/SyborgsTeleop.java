@@ -21,7 +21,7 @@ import java.util.Optional;
 @Config
 @TeleOp
 public class SyborgsTeleop extends LinearOpMode {
-	AutoPowerAngle autoShooter;	public static volatile double targetVelocity = 1350;
+	public static volatile double targetVelocity = 1350;
 	HeadingController headingController = new HeadingController();
 	private boolean autoAlign = false;
 	MecanumDrive drive;
@@ -57,18 +57,16 @@ public class SyborgsTeleop extends LinearOpMode {
 
 	@Override
 	public void runOpMode() {
-		// Initialize the auto power/angle helper
-		autoShooter = new AutoPowerAngle(hardwareMap, telemetry);
 		telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 		drive = new MecanumDrive(hardwareMap, new Pose2d(0, 0, Math.toRadians(180)));
 
-		chuck = hardwareMap.get(Servo.class, "c");
 		angle = hardwareMap.get(Servo.class, "angle");
 		sensor1 = hardwareMap.get(ColorRangeSensor.class, "cs1");
 		sensor2 = hardwareMap.get(ColorRangeSensor.class, "cs2");
 		shooter = new Shooter(hardwareMap, telemetry);
 
 		autoSort = new AutoSort(hardwareMap, telemetry);
+		Common.telemetry = telemetry;
 
 		while (opModeInInit()) {
 			runInitLoop();
@@ -90,12 +88,6 @@ public class SyborgsTeleop extends LinearOpMode {
 
 */
 			angle.setPosition(.5);
-			// Calculate distance to goal (assuming goal is at center X=72, Y=0 for this example)
-			Pose2d currentPose = drive.localizer.getPose();
-			double distToGoal = Math.hypot(72 - currentPose.position.x, 0 - currentPose.position.y);
-
-// Update the auto shooter logic
-			autoShooter.update(gamepad1, distToGoal, telemetry);
 			handleShooterInput();
 			driveRobot();
 			updateSorter();
@@ -147,12 +139,12 @@ public class SyborgsTeleop extends LinearOpMode {
 		if (gamepad1.right_trigger > 0.5) {
 			if (!lastRightTrigger) {
 				lastRightTrigger = true;
-				chuck.setPosition(.7);
+				shooter.chuckBalls();
 				feedToggle = !feedToggle;
 			}
 		} else {
 			lastRightTrigger = false;
-			chuck.setPosition(.2);
+			shooter.stopChucking();
 		}
 		if (gamepad1.left_trigger > 0.5) {
 			if (!lastLeftTrigger) {
@@ -168,7 +160,7 @@ public class SyborgsTeleop extends LinearOpMode {
 			shooter.maintainVelocity(0, autoAlign);
 		}
 		if (gamepad1.dpad_up) {
-			targetVelocity = 2400;
+			targetVelocity = 2000;
 		}
 		if (gamepad1.dpad_down) {
 			targetVelocity = 1350;
@@ -234,7 +226,7 @@ public class SyborgsTeleop extends LinearOpMode {
 		drive.updatePoseEstimate();
 		Pose2d pose = drive.localizer.getPose();
 		double turnPower = headingController.getTurnPower(pose,
-				Common.alliance == Common.Alliance.Red? -68: -74,
+				Common.alliance == Common.Alliance.Red? -66: -74,
 				Common.alliance == Common.Alliance.Red ? 72 : -72);
 		telemetry.addData("Turn Power", turnPower);
 		if (!autoPark) drive.setDrivePowers(new PoseVelocity2d(
