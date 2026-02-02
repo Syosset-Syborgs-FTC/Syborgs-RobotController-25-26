@@ -9,6 +9,7 @@ import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
+import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
@@ -16,12 +17,15 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.ColorRangeSensor;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import com.qualcomm.robotcore.util.ElapsedTime;
+
+import java.util.List;
 import java.util.Optional;
 
 @Config
 @TeleOp
 public class SyborgsTeleop extends LinearOpMode {
 	public static volatile double targetVelocity = 1350;
+	public static volatile double angle = 0.1;
 	HeadingController headingController = new HeadingController();
 	private boolean autoAlign = false;
 	MecanumDrive drive;
@@ -42,8 +46,6 @@ public class SyborgsTeleop extends LinearOpMode {
 	boolean feedToggle = false;
 	boolean autoPark = false;
 
-	private Servo chuck;
-	private Servo angle;
 
 	private ColorRangeSensor sensor1, sensor2;
 	private int artifactCount = 0;
@@ -60,7 +62,6 @@ public class SyborgsTeleop extends LinearOpMode {
 		telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 		drive = new MecanumDrive(hardwareMap, new Pose2d(0, 0, Math.toRadians(180)));
 
-		angle = hardwareMap.get(Servo.class, "angle");
 		sensor1 = hardwareMap.get(ColorRangeSensor.class, "cs1");
 		sensor2 = hardwareMap.get(ColorRangeSensor.class, "cs2");
 		shooter = new Shooter(hardwareMap, telemetry);
@@ -68,13 +69,23 @@ public class SyborgsTeleop extends LinearOpMode {
 		autoSort = new AutoSort(hardwareMap, telemetry);
 		Common.telemetry = telemetry;
 
+		List<LynxModule> allHubs = hardwareMap.getAll(LynxModule.class);
+		for (LynxModule hub : allHubs) {
+			hub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
+		}
 		while (opModeInInit()) {
+			for (LynxModule module : allHubs) {
+				module.clearBulkCache();
+			}
 			runInitLoop();
 		}
 
 		waitForStart();
 
 		while (opModeIsActive()) {
+			for (LynxModule module : allHubs) {
+				module.clearBulkCache();
+			}
 			double cycleStart = getRuntime();
 			int currentObeliskID = ((SensorFusion) drive.localizer).getObeliskID().orElse(0);
 
@@ -87,7 +98,6 @@ public class SyborgsTeleop extends LinearOpMode {
 			telemetry.addData("Auto sort cycle (ms)", getRuntime()*1000 - cycleStart*1000);
 
 */
-			angle.setPosition(.5);
 			handleShooterInput();
 			driveRobot();
 			updateSorter();
@@ -170,7 +180,21 @@ public class SyborgsTeleop extends LinearOpMode {
 		} else {
 			shooter.stopKick();
 		}
-
+		synchronized (this) {
+			if (gamepad2.yWasPressed()) {
+				angle += 0.005;
+			}
+			if (gamepad1.aWasPressed()) {
+				angle -= 0.005;
+			}
+			if (gamepad2.dpadUpWasPressed()) {
+				targetVelocity += 25;
+			}
+			if (gamepad2.dpadDownWasPressed()) {
+				targetVelocity -= 25;
+			}
+		}
+		shooter.setAngle(angle);
 	}
 
 	public void updateSorter() {
@@ -224,6 +248,7 @@ public class SyborgsTeleop extends LinearOpMode {
 			manualRotation *= 0.4;
 		}
 		drive.updatePoseEstimate();
+
 		Pose2d pose = drive.localizer.getPose();
 		double turnPower = headingController.getTurnPower(pose,
 				Common.alliance == Common.Alliance.Red? -66: -74,
@@ -289,5 +314,7 @@ public class SyborgsTeleop extends LinearOpMode {
 		packet.fieldOverlay().setStroke("#3F51B5");
 		Drawing.drawRobot(packet.fieldOverlay(), pose);
 		FtcDashboard.getInstance().sendTelemetryPacket(packet);
+
+		telemetry.addData("Pose (x, y, headingDegrees)", "%.2f, %.2f, %.2f", pose.position.x, pose.position.y, Math.toDegrees(pose.heading.log()));
 	}
 }

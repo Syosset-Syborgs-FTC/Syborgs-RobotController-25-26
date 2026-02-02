@@ -23,12 +23,13 @@ public class Shooter {
 	public volatile static double kI = 0.00052;
 	public volatile static double kD = 0.0001;
 	public volatile static double kF = 0.0052;
-	public Servo rgbLight, kicker, chuck;
+	public Servo rgbLight, kicker, chuck, angle;
 	private Telemetry telemetry;
 	private PIDFController flywheelController;
 	VoltageSensor voltage;
 	public Shooter(HardwareMap hardwareMap, Telemetry telemetry) {
 		this.telemetry = telemetry;
+		angle = hardwareMap.get(Servo.class, "angle");
 
 		flywheel = (DcMotorEx) hardwareMap.dcMotor.get("st");
 		intake = hardwareMap.dcMotor.get("in");
@@ -143,5 +144,9 @@ public class Shooter {
 	}
 	public void neutralKick() {
 		kicker.setPosition(0.);
+	}
+	public void setAngle(double target) {
+		angle.setPosition(target);
+		telemetry.addData("Angler Position", angle.getPosition());
 	}
 }
