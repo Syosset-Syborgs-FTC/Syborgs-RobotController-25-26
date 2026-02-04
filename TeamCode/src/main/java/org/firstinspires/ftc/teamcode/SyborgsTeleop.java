@@ -182,10 +182,10 @@ public class SyborgsTeleop extends LinearOpMode {
 		}
 		synchronized (this) {
 			if (gamepad2.yWasPressed()) {
-				angle += 0.005;
+				angle += 0.05;
 			}
-			if (gamepad1.aWasPressed()) {
-				angle -= 0.005;
+			if (gamepad2.aWasPressed()) {
+				angle -= 0.05;
 			}
 			if (gamepad2.dpadUpWasPressed()) {
 				targetVelocity += 25;
